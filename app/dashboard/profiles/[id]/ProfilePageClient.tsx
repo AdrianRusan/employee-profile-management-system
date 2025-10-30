@@ -6,6 +6,7 @@ import { ProfileCard } from '@/components/ProfileCard';
 import { ProfileEditForm } from '@/components/ProfileEditForm';
 import { FeedbackForm } from '@/components/FeedbackForm';
 import { FeedbackList } from '@/components/FeedbackList';
+import { AbsenceCalendar } from '@/components/AbsenceCalendar';
 import {
   Dialog,
   DialogContent,
@@ -90,8 +91,15 @@ export function ProfilePageClient({ user }: ProfilePageClientProps) {
         </TabsContent>
 
         <TabsContent value="absences">
-          <div className="text-center py-12 text-muted-foreground">
-            <p>Absence management coming in Phase 5</p>
+          <div className="space-y-6">
+            {/* Show absence calendar if user can view absences (manager or self) */}
+            {(session.role === 'MANAGER' || session.id === user.id) ? (
+              <AbsenceCalendar userId={user.id} />
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <p>You do not have permission to view absence requests for this user.</p>
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
