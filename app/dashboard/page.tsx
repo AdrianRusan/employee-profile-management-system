@@ -1,11 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { trpc } from '@/lib/trpc/Provider';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RoleIndicator } from '@/components/RoleIndicator';
+import { Users, MessageSquare, CalendarDays } from 'lucide-react';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -74,13 +76,28 @@ export default function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Common tasks</CardDescription>
+              <CardDescription>Navigate to key features</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <p className="text-sm text-gray-600">
-                  Profile management features coming in Phase 3
-                </p>
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <Link href="/dashboard/profiles">
+                    <Users className="mr-2 h-4 w-4" />
+                    View Profiles
+                  </Link>
+                </Button>
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <Link href="/dashboard/feedback">
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Feedback
+                  </Link>
+                </Button>
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <Link href="/dashboard/absences">
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    Absences
+                  </Link>
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -88,16 +105,16 @@ export default function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle>System Status</CardTitle>
-              <CardDescription>Phase 2 - Authentication Complete</CardDescription>
+              <CardDescription>Phase 5 - Absence Management Complete</CardDescription>
             </CardHeader>
             <CardContent>
               <ul className="space-y-1 text-sm text-gray-600">
                 <li>✅ Authentication & Authorization</li>
                 <li>✅ Role-based access control</li>
                 <li>✅ Session management</li>
-                <li>⏳ Profile management (Phase 3)</li>
-                <li>⏳ Feedback system (Phase 4)</li>
-                <li>⏳ Absence management (Phase 5)</li>
+                <li>✅ Profile management (Phase 3)</li>
+                <li>✅ Feedback system (Phase 4)</li>
+                <li>✅ Absence management (Phase 5)</li>
               </ul>
             </CardContent>
           </Card>
