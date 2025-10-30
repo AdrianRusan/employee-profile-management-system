@@ -1,0 +1,78 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String            @id @default(cuid())
+  email              String            @unique
+  name               String
+  role               Role              @default(EMPLOYEE)
+  department         String?
+  title              String?
+  bio                String?
+  avatar             String?
+  salary             Decimal?
+  ssn                String?
+  address            String?
+  performanceRating  Int?
+  feedbackGiven      Feedback[]        @relation("FeedbackGiver")
+  feedbackReceived   Feedback[]        @relation("FeedbackReceiver")
+  absenceRequests    AbsenceRequest[]
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@index([email])
+  @@index([department])
+  @@index([role])
+}
+
+model Feedback {
+  id              String   @id @default(cuid())
+  content         String
+  polishedContent String?
+  isPolished      Boolean  @default(false)
+  giver           User     @relation("FeedbackGiver", fields: [giverId], references: [id])
+  giverId         String
+  receiver        User     @relation("FeedbackReceiver", fields: [receiverId], references: [id])
+  receiverId      String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([receiverId, createdAt(sort: Desc)])
+  @@index([giverId])
+}
+
+model AbsenceRequest {
+  id        String        @id @default(cuid())
+  startDate DateTime
+  endDate   DateTime
+  reason    String
+  status    AbsenceStatus @default(PENDING)
+  user      User          @relation(fields: [userId], references: [id])
+  userId    String
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+enum Role {
+  EMPLOYEE
+  MANAGER
+  COWORKER
+}
+
+enum AbsenceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
