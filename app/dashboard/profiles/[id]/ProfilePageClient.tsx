@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { User } from '@prisma/client';
+import { SerializedUser } from '@/lib/types/user';
 import { ProfileCard } from '@/components/ProfileCard';
 import { ProfileEditForm } from '@/components/ProfileEditForm';
 import { FeedbackForm } from '@/components/FeedbackForm';
@@ -18,7 +18,7 @@ import { trpc } from '@/lib/trpc/Provider';
 import { canViewFeedback, canGiveFeedback } from '@/lib/permissions';
 
 interface ProfilePageClientProps {
-  user: User;
+  user: SerializedUser;
 }
 
 /**

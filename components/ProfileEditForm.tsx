@@ -1,6 +1,6 @@
 'use client';
 
-import { User } from '@prisma/client';
+import { SerializedUser } from '@/lib/types/user';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ProfileFormData, profileSchema } from '@/lib/validations/user';
@@ -22,7 +22,7 @@ import { Loader2 } from 'lucide-react';
 import { AvatarUpload } from './AvatarUpload';
 
 interface ProfileEditFormProps {
-  user: User;
+  user: SerializedUser;
   onSuccess?: () => void;
   onCancel?: () => void;
 }

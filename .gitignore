@@ -40,5 +40,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# uploads
-/public/uploads
+# uploads (but track the directory structure)
+/public/uploads/*
+!/public/uploads/.gitkeep
+.worktrees

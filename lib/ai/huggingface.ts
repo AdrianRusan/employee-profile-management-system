@@ -1,10 +1,15 @@
 /**
  * HuggingFace AI Integration for Feedback Polishing
- * Uses HuggingFace Inference API with google/flan-t5-base model
+ * Uses HuggingFace Inference Providers API with Qwen/Qwen2.5-7B-Instruct model
+ * via OpenAI-compatible chat completions endpoint
  */
 
-interface HuggingFaceResponse {
-  generated_text?: string;
+interface ChatCompletionResponse {
+  choices?: Array<{
+    message?: {
+      content?: string;
+    };
+  }>;
   error?: string;
 }
 
@@ -35,8 +40,13 @@ export async function polishFeedback(
     return content;
   }
 
-  // Construct the prompt for the AI model
-  const prompt = `Improve the following feedback to be more constructive, professional, and actionable while maintaining its core message and intent:\n\n"${content}"\n\nImproved feedback:`;
+  // Construct the messages for the chat completion API
+  const messages = [
+    {
+      role: 'user',
+      content: `Improve the following feedback to be more constructive, professional, and actionable while maintaining its core message and intent:\n\n"${content}"\n\nImproved feedback:`
+    }
+  ];
 
   let lastError: Error | null = null;
 
@@ -44,7 +54,7 @@ export async function polishFeedback(
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const response = await fetch(
-        'https://api-inference.huggingface.co/models/google/flan-t5-base',
+        'https://router.huggingface.co/v1/chat/completions',
         {
           method: 'POST',
           headers: {
@@ -52,13 +62,11 @@ export async function polishFeedback(
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            inputs: prompt,
-            parameters: {
-              max_new_tokens: 500,
-              temperature: 0.7,
-              top_p: 0.9,
-              do_sample: true,
-            },
+            model: 'Qwen/Qwen2.5-7B-Instruct',
+            messages: messages,
+            max_tokens: 500,
+            temperature: 0.7,
+            top_p: 0.9,
           }),
         }
       );
@@ -71,21 +79,13 @@ export async function polishFeedback(
         );
       }
 
-      const result = (await response.json()) as HuggingFaceResponse[] | HuggingFaceResponse;
+      const result = (await response.json()) as ChatCompletionResponse;
 
-      // Handle array response
-      if (Array.isArray(result) && result.length > 0) {
-        const generatedText = result[0].generated_text;
-        if (generatedText && generatedText.trim().length > 0) {
-          return generatedText.trim();
-        }
-      }
-
-      // Handle single object response
-      if (!Array.isArray(result) && result.generated_text) {
-        const generatedText = result.generated_text;
-        if (generatedText.trim().length > 0) {
-          return generatedText.trim();
+      // Handle OpenAI-compatible chat completion response
+      if (result.choices && result.choices.length > 0) {
+        const messageContent = result.choices[0].message?.content;
+        if (messageContent && messageContent.trim().length > 0) {
+          return messageContent.trim();
         }
       }
 

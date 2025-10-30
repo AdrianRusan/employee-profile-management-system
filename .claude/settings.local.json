@@ -14,7 +14,17 @@
       "Bash(npx prisma init)",
       "Bash(npx prisma migrate:*)",
       "Bash(npx prisma generate:*)",
-      "Bash(npm run build)"
+      "Bash(npm run build)",
+      "mcp__playwright__browser_type",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_navigate",
+      "Bash(npx prisma db seed:*)",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_take_screenshot",
+      "Bash(git rev-parse:*)",
+      "mcp__filesystem__create_directory",
+      "Bash(cat:*)",
+      "Bash(npx shadcn@latest add:*)"
     ],
     "deny": [],
     "ask": []

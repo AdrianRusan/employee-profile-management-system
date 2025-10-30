@@ -1,10 +1,23 @@
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { ProfilePageClient } from './ProfilePageClient';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const prisma = new PrismaClient();
+
+/**
+ * Helper function to serialize user data for client components
+ * Converts Prisma Decimal types to strings to avoid serialization errors
+ */
+function serializeUserForClient<T extends { salary?: Prisma.Decimal | null }>(
+  user: T
+): Omit<T, 'salary'> & { salary: string | null } {
+  return {
+    ...user,
+    salary: user.salary?.toString() ?? null,
+  };
+}
 
 interface ProfilePageProps {
   params: Promise<{ id: string }>;
@@ -25,10 +38,13 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     notFound();
   }
 
+  // Serialize user data to convert Decimal to string for client component
+  const serializedUser = serializeUserForClient(user);
+
   return (
     <div className="container max-w-4xl py-8">
       <Suspense fallback={<ProfileSkeleton />}>
-        <ProfilePageClient user={user} />
+        <ProfilePageClient user={serializedUser} />
       </Suspense>
     </div>
   );

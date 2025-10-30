@@ -8,6 +8,20 @@ import {
   profileListSchema
 } from '@/lib/validations/user';
 import { canViewSensitiveData, canEditProfile } from '@/lib/permissions';
+import { Prisma } from '@prisma/client';
+
+/**
+ * Helper function to serialize user data for client components
+ * Converts Prisma Decimal types to strings to avoid serialization errors
+ */
+function serializeUser<T extends { salary?: Prisma.Decimal | null }>(
+  user: T
+): Omit<T, 'salary'> & { salary: string | null } {
+  return {
+    ...user,
+    salary: user.salary?.toString() ?? null,
+  };
+}
 
 /**
  * User router for profile management
@@ -41,13 +55,16 @@ export const userRouter = router({
         user.id
       );
 
+      // Serialize user data to convert Decimal to string
+      const serializedUser = serializeUser(user);
+
       // Filter sensitive fields if viewer doesn't have permission
       if (!canSeeSensitive) {
-        const { salary, ssn, address, performanceRating, ...publicFields } = user;
+        const { salary, ssn, address, performanceRating, ...publicFields } = serializedUser;
         return publicFields;
       }
 
-      return user;
+      return serializedUser;
     }),
 
   /**
@@ -92,7 +109,7 @@ export const userRouter = router({
         nextCursor = nextItem!.id;
       }
 
-      // Filter sensitive data for non-managers
+      // Filter sensitive data for non-managers and serialize
       const filteredUsers = users.map((user) => {
         const canSeeSensitive = canViewSensitiveData(
           ctx.session.role,
@@ -100,12 +117,15 @@ export const userRouter = router({
           user.id
         );
 
+        // Serialize user data to convert Decimal to string
+        const serializedUser = serializeUser(user);
+
         if (!canSeeSensitive) {
-          const { salary, ssn, address, performanceRating, ...publicFields } = user;
+          const { salary, ssn, address, performanceRating, ...publicFields } = serializedUser;
           return publicFields;
         }
 
-        return user;
+        return serializedUser;
       });
 
       return {
@@ -140,7 +160,7 @@ export const userRouter = router({
         data: input.data,
       });
 
-      return updatedUser;
+      return serializeUser(updatedUser);
     }),
 
   /**
@@ -167,7 +187,7 @@ export const userRouter = router({
         data,
       });
 
-      return updatedUser;
+      return serializeUser(updatedUser);
     }),
 
   /**

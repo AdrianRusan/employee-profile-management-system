@@ -1,6 +1,6 @@
 'use client';
 
-import { User } from '@prisma/client';
+import { SerializedUser } from '@/lib/types/user';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,7 @@ import { canViewSensitiveData, canEditProfile } from '@/lib/permissions';
 import { Edit, Mail, Briefcase, Building2, DollarSign, Shield, MapPin, TrendingUp } from 'lucide-react';
 
 interface ProfileCardProps {
-  user: User;
+  user: SerializedUser;
   currentUserId: string;
   currentUserRole: 'EMPLOYEE' | 'MANAGER' | 'COWORKER';
   onEdit?: () => void;
@@ -113,7 +113,7 @@ export function ProfileCard({ user, currentUserId, currentUserRole, onEdit }: Pr
                   <div className="flex items-center gap-2 mb-2">
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-medium">Salary:</span>
-                    <span className="text-sm">${user.salary.toString()}</span>
+                    <span className="text-sm">${user.salary}</span>
                   </div>
                 )}
 

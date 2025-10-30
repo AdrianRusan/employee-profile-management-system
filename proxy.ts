@@ -9,7 +9,11 @@ const protectedRoutes = ['/dashboard', '/dashboard/**'];
 // Public routes that should redirect to dashboard if authenticated
 const publicRoutes = ['/login', '/'];
 
-export async function middleware(request: NextRequest) {
+/**
+ * Proxy function (formerly middleware in Next.js 15)
+ * Handles authentication and routing logic at the Edge Runtime
+ */
+export async function proxy(request: NextRequest) {
   const response = NextResponse.next();
 
   // Get session from cookies
