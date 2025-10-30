@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { trpc } from '@/lib/trpc/Provider';
-import { absenceRequestSchema, type AbsenceRequestInput } from '@/lib/validations/absence';
+import { absenceRequestFormSchema, type AbsenceRequestFormInput } from '@/lib/validations/absence';
 import {
   Dialog,
   DialogContent,
@@ -49,8 +49,8 @@ export function AbsenceRequestDialog({ children, onSuccess }: AbsenceRequestDial
   const [open, setOpen] = useState(false);
   const utils = trpc.useUtils();
 
-  const form = useForm<AbsenceRequestInput>({
-    resolver: zodResolver(absenceRequestSchema),
+  const form = useForm<AbsenceRequestFormInput>({
+    resolver: zodResolver(absenceRequestFormSchema),
     defaultValues: {
       startDate: new Date(),
       endDate: new Date(),
@@ -77,7 +77,7 @@ export function AbsenceRequestDialog({ children, onSuccess }: AbsenceRequestDial
     },
   });
 
-  const onSubmit = (data: AbsenceRequestInput) => {
+  const onSubmit = (data: AbsenceRequestFormInput) => {
     createMutation.mutate(data);
   };
 

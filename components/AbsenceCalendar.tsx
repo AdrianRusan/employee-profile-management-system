@@ -59,12 +59,16 @@ export function AbsenceCalendar({ userId, showLegend = true }: AbsenceCalendarPr
   };
 
   // Custom day content renderer for colored status indicators
+  // Priority: APPROVED > PENDING > REJECTED (show most relevant status)
   const modifiers = useMemo(() => {
     if (!absences) return {};
 
     const pending: Date[] = [];
     const approved: Date[] = [];
     const rejected: Date[] = [];
+
+    // Group absences by date to handle overlaps with priority
+    const dateStatusMap = new Map<string, 'APPROVED' | 'PENDING' | 'REJECTED'>();
 
     absences.forEach((absence) => {
       const start = new Date(absence.startDate);
@@ -73,17 +77,30 @@ export function AbsenceCalendar({ userId, showLegend = true }: AbsenceCalendarPr
       // Generate all dates in the range
       const current = new Date(start);
       while (current <= end) {
-        const dateToAdd = new Date(current);
+        const dateKey = current.toISOString().split('T')[0]; // Use YYYY-MM-DD as key
+        const existing = dateStatusMap.get(dateKey);
 
-        if (absence.status === 'PENDING') {
-          pending.push(dateToAdd);
-        } else if (absence.status === 'APPROVED') {
-          approved.push(dateToAdd);
-        } else if (absence.status === 'REJECTED') {
-          rejected.push(dateToAdd);
+        // Priority: APPROVED > PENDING > REJECTED
+        if (!existing ||
+            (absence.status === 'APPROVED') ||
+            (absence.status === 'PENDING' && existing === 'REJECTED')) {
+          dateStatusMap.set(dateKey, absence.status);
         }
 
         current.setDate(current.getDate() + 1);
+      }
+    });
+
+    // Convert map to date arrays
+    dateStatusMap.forEach((status, dateKey) => {
+      const date = new Date(dateKey + 'T00:00:00'); // Parse as local date
+
+      if (status === 'PENDING') {
+        pending.push(date);
+      } else if (status === 'APPROVED') {
+        approved.push(date);
+      } else if (status === 'REJECTED') {
+        rejected.push(date);
       }
     });
 

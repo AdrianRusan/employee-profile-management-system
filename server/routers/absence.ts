@@ -21,25 +21,32 @@ export const absenceRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { startDate, endDate, reason } = input;
 
-      // Check for overlapping absence requests
+      // Check for overlapping absence requests (only PENDING and APPROVED)
+      // Rejected requests don't block new requests for the same dates
       const overlap = await ctx.prisma.absenceRequest.findFirst({
         where: {
           userId: ctx.session.userId,
+          status: { in: ['PENDING', 'APPROVED'] }, // Only check active absences
           OR: [
             {
-              // New request starts during existing absence
+              // Scenario 1: New request starts during existing absence
               startDate: { lte: startDate },
               endDate: { gte: startDate },
             },
             {
-              // New request ends during existing absence
+              // Scenario 2: New request ends during existing absence
               startDate: { lte: endDate },
               endDate: { gte: endDate },
             },
             {
-              // New request completely contains existing absence
+              // Scenario 3: New request completely contains existing absence
               startDate: { gte: startDate },
               endDate: { lte: endDate },
+            },
+            {
+              // Scenario 4: Existing absence completely contains new request
+              startDate: { lte: startDate },
+              endDate: { gte: endDate },
             },
           ],
         },

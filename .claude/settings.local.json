@@ -24,7 +24,10 @@
       "Bash(git rev-parse:*)",
       "mcp__filesystem__create_directory",
       "Bash(cat:*)",
-      "Bash(npx shadcn@latest add:*)"
+      "Bash(npx shadcn@latest add:*)",
+      "mcp__playwright__browser_wait_for",
+      "mcp__playwright__browser_press_key",
+      "mcp__playwright__browser_console_messages"
     ],
     "deny": [],
     "ask": []
