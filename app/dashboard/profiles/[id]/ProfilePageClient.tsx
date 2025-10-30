@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { User } from '@prisma/client';
 import { ProfileCard } from '@/components/ProfileCard';
 import { ProfileEditForm } from '@/components/ProfileEditForm';
+import { FeedbackForm } from '@/components/FeedbackForm';
+import { FeedbackList } from '@/components/FeedbackList';
 import {
   Dialog,
   DialogContent,
@@ -13,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { trpc } from '@/lib/trpc/Provider';
+import { canViewFeedback, canGiveFeedback } from '@/lib/permissions';
 
 interface ProfilePageClientProps {
   user: User;
@@ -55,8 +58,34 @@ export function ProfilePageClient({ user }: ProfilePageClientProps) {
         </TabsContent>
 
         <TabsContent value="feedback">
-          <div className="text-center py-12 text-muted-foreground">
-            <p>Feedback functionality coming in Phase 4</p>
+          <div className="space-y-6">
+            {/* Show feedback form if current user can give feedback and viewing another user's profile */}
+            {canGiveFeedback() && session.id !== user.id && (
+              <FeedbackForm
+                receiverId={user.id}
+                receiverName={user.name}
+                onSuccess={() => {
+                  // Feedback list will automatically refresh via query invalidation
+                }}
+              />
+            )}
+
+            {/* Show feedback list if user can view feedback */}
+            {canViewFeedback(session.role, session.id, user.id) && (
+              <div>
+                <h3 className="text-lg font-semibold mb-4">
+                  {session.id === user.id ? 'Your Feedback' : `Feedback for ${user.name}`}
+                </h3>
+                <FeedbackList userId={user.id} />
+              </div>
+            )}
+
+            {/* Show message if user cannot view feedback */}
+            {!canViewFeedback(session.role, session.id, user.id) && (
+              <div className="text-center py-12 text-muted-foreground">
+                <p>You do not have permission to view feedback for this user.</p>
+              </div>
+            )}
           </div>
         </TabsContent>
 
