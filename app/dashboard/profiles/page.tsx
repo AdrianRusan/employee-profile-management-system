@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { User } from '@prisma/client';
 import {
   useReactTable,
   getCoreRowModel,
@@ -35,7 +34,14 @@ import {
 import { Search, Eye, Loader2 } from 'lucide-react';
 
 // Table columns definition
-const columns: ColumnDef<any>[] = [
+const columns: ColumnDef<{
+  id: string;
+  name: string;
+  email: string;
+  department: string | null;
+  title: string | null;
+  role: string;
+}>[] = [
   {
     accessorKey: 'name',
     header: 'Name',
@@ -118,6 +124,7 @@ export default function ProfilesPage() {
   // Flatten paginated data
   const users = data?.pages.flatMap((page) => page.users) ?? [];
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data: users,
     columns,

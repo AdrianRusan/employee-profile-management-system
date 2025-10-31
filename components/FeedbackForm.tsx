@@ -104,8 +104,6 @@ export function FeedbackForm({
   };
 
   const onSubmit = (data: FeedbackFormData) => {
-    const finalContent = usePolished && polishedContent ? polishedContent : data.content;
-
     createMutation.mutate({
       receiverId: data.receiverId,
       content: data.content, // Always store original
@@ -114,6 +112,7 @@ export function FeedbackForm({
     });
   };
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const currentContent = form.watch('content');
   const charCount = currentContent?.length || 0;
   const isValidLength = charCount >= 10 && charCount <= 2000;

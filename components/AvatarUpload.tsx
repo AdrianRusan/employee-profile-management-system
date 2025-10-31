@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -30,11 +30,16 @@ export function AvatarUpload({
   const [isUploading, setIsUploading] = useState(false);
   const utils = trpc.useUtils();
 
+  // Keep latest onUploadSuccess callback to avoid stale closure in mutation
+  const onUploadSuccessRef = useRef(onUploadSuccess);
+  useEffect(() => {
+    onUploadSuccessRef.current = onUploadSuccess;
+  }, [onUploadSuccess]);
+
   const updateAvatarMutation = trpc.user.update.useMutation({
     onSuccess: () => {
       toast.success('Avatar updated successfully');
       utils.user.getById.invalidate({ id: userId });
-      onUploadSuccess?.(preview!);
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to update avatar');
@@ -88,6 +93,11 @@ export function AvatarUpload({
           id: userId,
           data: { avatar: data.url },
         });
+
+        // Notify parent with the actual uploaded URL (never pass a null/undefined value)
+        if (typeof data?.url === 'string' && data.url) {
+          onUploadSuccess?.(data.url);
+        }
       } catch (error) {
         console.error('Upload error:', error);
         toast.error(error instanceof Error ? error.message : 'Failed to upload avatar');
@@ -117,19 +127,20 @@ export function AvatarUpload({
       });
       setPreview(null);
       toast.success('Avatar removed successfully');
-    } catch (error) {
+    } catch {
       toast.error('Failed to remove avatar');
     } finally {
       setIsUploading(false);
     }
   };
 
-  const initials = userName
+  const initials = (userName || '')
     .split(' ')
-    .map((n) => n[0])
+    .filter((part) => part.trim() !== '')
+    .map((part) => part.trim()[0]!)
     .join('')
     .toUpperCase()
-    .slice(0, 2);
+    .slice(0, 2) || '';
 
   return (
     <div className="space-y-4">

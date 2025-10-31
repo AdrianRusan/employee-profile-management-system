@@ -6,8 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { trpc } from '@/lib/trpc/Provider';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format, isWithinInterval, parseISO } from 'date-fns';
-import type { AbsenceRequest } from '@prisma/client';
+import { format } from 'date-fns';
 
 interface AbsenceCalendarProps {
   userId?: string;
@@ -37,27 +36,6 @@ export function AbsenceCalendar({ userId, showLegend = true }: AbsenceCalendarPr
     };
   }, [absences]);
 
-  // Function to check if a date falls within any absence period
-  const getAbsenceStatus = (date: Date) => {
-    if (!absences) return null;
-
-    for (const absence of absences) {
-      const startDate = new Date(absence.startDate);
-      const endDate = new Date(absence.endDate);
-
-      // Reset time to midnight for accurate comparison
-      const checkDate = new Date(date.setHours(0, 0, 0, 0));
-      const start = new Date(startDate.setHours(0, 0, 0, 0));
-      const end = new Date(endDate.setHours(0, 0, 0, 0));
-
-      if (isWithinInterval(checkDate, { start, end })) {
-        return absence;
-      }
-    }
-
-    return null;
-  };
-
   // Custom day content renderer for colored status indicators
   // Priority: APPROVED > PENDING > REJECTED (show most relevant status)
   const modifiers = useMemo(() => {
@@ -70,30 +48,51 @@ export function AbsenceCalendar({ userId, showLegend = true }: AbsenceCalendarPr
     // Group absences by date to handle overlaps with priority
     const dateStatusMap = new Map<string, 'APPROVED' | 'PENDING' | 'REJECTED'>();
 
-    absences.forEach((absence) => {
-      const start = new Date(absence.startDate);
-      const end = new Date(absence.endDate);
+    // Helpers to normalize and operate in UTC to avoid off-by-one issues
+    const toUtcMidnight = (input: string | Date): Date => {
+      if (typeof input === 'string') {
+        // If input is a date-only string, treat it as UTC midnight explicitly
+        if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
+          return new Date(input + 'T00:00:00Z');
+        }
+        const d = new Date(input);
+        return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+      }
+      const d = input;
+      return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    };
 
-      // Generate all dates in the range
-      const current = new Date(start);
-      while (current <= end) {
-        const dateKey = current.toISOString().split('T')[0]; // Use YYYY-MM-DD as key
+    const getUtcDateKey = (d: Date): string => {
+      const y = d.getUTCFullYear();
+      const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(d.getUTCDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+
+    absences.forEach((absence) => {
+      const start = toUtcMidnight(absence.startDate as unknown as string);
+      const end = toUtcMidnight(absence.endDate as unknown as string);
+
+      // Iterate day-by-day using fixed 24h steps in UTC
+      const DAY_MS = 86400000; // 24 * 60 * 60 * 1000
+      for (let ts = start.getTime(); ts <= end.getTime(); ts += DAY_MS) {
+        const currentUtc = new Date(ts);
+        const dateKey = getUtcDateKey(currentUtc); // YYYY-MM-DD in UTC
         const existing = dateStatusMap.get(dateKey);
 
         // Priority: APPROVED > PENDING > REJECTED
         if (!existing ||
-            (absence.status === 'APPROVED') ||
+            absence.status === 'APPROVED' ||
             (absence.status === 'PENDING' && existing === 'REJECTED')) {
           dateStatusMap.set(dateKey, absence.status);
         }
-
-        current.setDate(current.getDate() + 1);
       }
     });
 
     // Convert map to date arrays
     dateStatusMap.forEach((status, dateKey) => {
-      const date = new Date(dateKey + 'T00:00:00'); // Parse as local date
+      // Reconstruct Date object as UTC midnight to keep consistency
+      const date = new Date(dateKey + 'T00:00:00Z');
 
       if (status === 'PENDING') {
         pending.push(date);
@@ -175,6 +174,7 @@ export function AbsenceCalendar({ userId, showLegend = true }: AbsenceCalendarPr
             <div className="space-y-2">
               {absences
                 .filter((absence) => new Date(absence.endDate) >= new Date())
+                .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
                 .slice(0, 5)
                 .map((absence) => (
                   <div

@@ -60,7 +60,7 @@ export function ProfilePageClient({ user }: ProfilePageClientProps) {
 
         <TabsContent value="feedback">
           <div className="space-y-6">
-            {/* Show feedback form if current user can give feedback and viewing another user's profile */}
+            {/* Show feedback form if current user can give feedback and viewing another user profile */}
             {canGiveFeedback() && session.id !== user.id && (
               <FeedbackForm
                 receiverId={user.id}
@@ -109,7 +109,7 @@ export function ProfilePageClient({ user }: ProfilePageClientProps) {
           <DialogHeader>
             <DialogTitle>Edit Profile</DialogTitle>
             <DialogDescription>
-              Make changes to your profile information. Click save when you're done.
+              Make changes to your profile information. Click save when you&apos;re done.
             </DialogDescription>
           </DialogHeader>
           <ProfileEditForm
