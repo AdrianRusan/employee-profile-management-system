@@ -178,9 +178,10 @@ export const userRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Convert salary to Decimal if provided
-      const data = { ...input.data };
-      if (data.salary !== undefined) {
-        data.salary = data.salary;
+      const data: Prisma.UserUpdateInput = { ...input.data };
+      if (data.salary != null) {
+        const salaryInput = data.salary;
+        data.salary = new Prisma.Decimal(salaryInput as Prisma.Decimal.Value);
       }
 
       // Update user profile with sensitive data

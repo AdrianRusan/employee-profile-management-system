@@ -52,9 +52,10 @@ export default function FeedbackPage() {
   };
 
   const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '';
+    return parts
+      .map((part) => part[0])
       .join('')
       .toUpperCase()
       .slice(0, 2);
@@ -139,10 +140,10 @@ export default function FeedbackPage() {
               {isExpanded && (
                 <div className="mt-3 p-3 bg-muted rounded-md space-y-2">
                   <p className="text-xs font-semibold text-muted-foreground uppercase">
-                    {isExpanded ? 'Polished Version' : 'Original Version'}
+                    Original Version
                   </p>
                   <p className="text-sm whitespace-pre-wrap">
-                    {isExpanded ? item.polishedContent : item.content}
+                    {item.content}
                   </p>
                 </div>
               )}

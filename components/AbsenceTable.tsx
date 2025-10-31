@@ -20,6 +20,8 @@ import { CalendarIcon, MoreHorizontal, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { AbsenceRequest, User } from '@prisma/client';
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 interface AbsenceWithUser extends Omit<AbsenceRequest, 'createdAt' | 'updatedAt' | 'startDate' | 'endDate'> {
   user?: Partial<User> | null;
   createdAt: string | Date;
@@ -97,7 +99,6 @@ export function AbsenceTable({
           startMidnight.setHours(0, 0, 0, 0);
           const endMidnight = new Date(endDate);
           endMidnight.setHours(0, 0, 0, 0);
-          const MS_PER_DAY = 24 * 60 * 60 * 1000;
           const duration =
             Math.floor((endMidnight.getTime() - startMidnight.getTime()) / MS_PER_DAY) + 1;
 
