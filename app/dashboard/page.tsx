@@ -1,78 +1,57 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { trpc } from '@/lib/trpc/Provider';
-import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { RoleIndicator } from '@/components/RoleIndicator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { FadeIn } from '@/components/FadeIn';
 import { Users, MessageSquare, CalendarDays } from 'lucide-react';
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const { user, logout: clearAuthState } = useAuthStore();
-
-  const { data: currentUser, isLoading } = trpc.auth.getCurrentUser.useQuery();
-
-  const logoutMutation = trpc.auth.logout.useMutation({
-    onSuccess: () => {
-      clearAuthState();
-      router.push('/login');
-    },
-  });
-
-  const handleLogout = () => {
-    logoutMutation.mutate();
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-gray-600">Loading...</p>
-      </div>
-    );
-  }
+  const { data: currentUser, isLoading, isError, error } = trpc.auth.getCurrentUser.useQuery();
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="border-b bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Employee Profile System</h1>
-            <p className="text-sm text-gray-600">
-              Welcome, {currentUser?.name || user?.name}
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <RoleIndicator />
-            <Button
-              variant="outline"
-              onClick={handleLogout}
-              disabled={logoutMutation.isPending}
-            >
-              {logoutMutation.isPending ? 'Logging out...' : 'Logout'}
-            </Button>
-          </div>
+    <div className="space-y-6">
+      <FadeIn direction="down">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="mt-2 text-sm text-gray-600">
+            Overview of your profile and quick access to key features
+          </p>
         </div>
-      </header>
+      </FadeIn>
 
-      <main className="mx-auto max-w-7xl px-4 py-8">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <FadeIn delay={0.1} direction="up">
           <Card>
             <CardHeader>
               <CardTitle>Profile Information</CardTitle>
               <CardDescription>View and manage your profile</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2 text-sm">
-                <p><span className="font-medium">Email:</span> {currentUser?.email}</p>
-                <p><span className="font-medium">Department:</span> {currentUser?.department || 'N/A'}</p>
-                <p><span className="font-medium">Title:</span> {currentUser?.title || 'N/A'}</p>
-              </div>
+              {isLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-4 w-60" />
+                  <Skeleton className="h-4 w-40" />
+                </div>
+              ) : isError ? (
+                <p className="text-sm text-red-600">
+                  Failed to load profile{error?.message ? `: ${error.message}` : ''}
+                </p>
+              ) : (
+                <div className="space-y-2 text-sm">
+                  <p><span className="font-medium">Email:</span> {currentUser?.email}</p>
+                  <p><span className="font-medium">Department:</span> {currentUser?.department || 'N/A'}</p>
+                  <p><span className="font-medium">Title:</span> {currentUser?.title || 'N/A'}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
+        </FadeIn>
 
+        <FadeIn delay={0.2} direction="up">
           <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
@@ -101,11 +80,13 @@ export default function DashboardPage() {
               </div>
             </CardContent>
           </Card>
+        </FadeIn>
 
+        <FadeIn delay={0.3} direction="up">
           <Card>
             <CardHeader>
               <CardTitle>System Status</CardTitle>
-              <CardDescription>Phase 5 - Absence Management Complete</CardDescription>
+              <CardDescription>Phase 6 - UI/UX Polish in Progress</CardDescription>
             </CardHeader>
             <CardContent>
               <ul className="space-y-1 text-sm text-gray-600">
@@ -118,8 +99,8 @@ export default function DashboardPage() {
               </ul>
             </CardContent>
           </Card>
-        </div>
-      </main>
+        </FadeIn>
+      </div>
     </div>
   );
 }

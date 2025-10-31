@@ -6,8 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { trpc } from '@/lib/trpc/Provider';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format, isWithinInterval, parseISO } from 'date-fns';
-import type { AbsenceRequest } from '@prisma/client';
+import { format } from 'date-fns';
 
 interface AbsenceCalendarProps {
   userId?: string;
@@ -36,27 +35,6 @@ export function AbsenceCalendar({ userId, showLegend = true }: AbsenceCalendarPr
       rejected: absences.filter((a) => a.status === 'REJECTED'),
     };
   }, [absences]);
-
-  // Function to check if a date falls within any absence period
-  const getAbsenceStatus = (date: Date) => {
-    if (!absences) return null;
-
-    for (const absence of absences) {
-      const startDate = new Date(absence.startDate);
-      const endDate = new Date(absence.endDate);
-
-      // Reset time to midnight for accurate comparison
-      const checkDate = new Date(date.setHours(0, 0, 0, 0));
-      const start = new Date(startDate.setHours(0, 0, 0, 0));
-      const end = new Date(endDate.setHours(0, 0, 0, 0));
-
-      if (isWithinInterval(checkDate, { start, end })) {
-        return absence;
-      }
-    }
-
-    return null;
-  };
 
   // Custom day content renderer for colored status indicators
   // Priority: APPROVED > PENDING > REJECTED (show most relevant status)

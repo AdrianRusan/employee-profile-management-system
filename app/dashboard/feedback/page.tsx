@@ -18,6 +18,14 @@ import {
 import { Sparkles, ChevronDown, ChevronUp, MessageSquare, Send } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuthStore } from '@/stores/authStore';
+import { Feedback, User } from '@prisma/client';
+
+type FeedbackWithUser = Omit<Feedback, 'createdAt' | 'updatedAt'> & {
+  giver?: Partial<User> | null;
+  receiver?: Partial<User> | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+};
 
 /**
  * Dedicated Feedback Page
@@ -61,7 +69,7 @@ export default function FeedbackPage() {
   };
 
   const renderFeedbackCard = (
-    item: any,
+    item: FeedbackWithUser,
     type: 'received' | 'given',
     isExpanded: boolean
   ) => {
@@ -71,6 +79,10 @@ export default function FeedbackPage() {
         ? item.polishedContent
         : item.content;
 
+    if (!displayPerson) {
+      return null;
+    }
+
     return (
       <Card key={item.id}>
         <CardHeader className="pb-3">
@@ -78,11 +90,11 @@ export default function FeedbackPage() {
             <div className="flex items-center gap-3">
               <Avatar>
                 <AvatarImage src={displayPerson.avatar || undefined} />
-                <AvatarFallback>{getInitials(displayPerson.name)}</AvatarFallback>
+                <AvatarFallback>{getInitials(displayPerson.name || 'Unknown')}</AvatarFallback>
               </Avatar>
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="font-semibold">{displayPerson.name}</p>
+                  <p className="font-semibold">{displayPerson.name || 'Unknown User'}</p>
                   {item.isPolished && (
                     <Badge variant="secondary" className="text-xs">
                       <Sparkles className="mr-1 h-3 w-3" />
@@ -201,7 +213,7 @@ export default function FeedbackPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Feedback</h1>
         <p className="text-muted-foreground">
-          View and manage feedback you've received and given
+          View and manage feedback you&apos;ve received and given
         </p>
       </div>
 
@@ -250,7 +262,7 @@ export default function FeedbackPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium">Sort by:</label>
-          <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+          <Select value={sortBy} onValueChange={(value: string) => setSortBy(value as 'recent' | 'oldest')}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>

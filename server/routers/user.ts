@@ -60,6 +60,7 @@ export const userRouter = router({
 
       // Filter sensitive fields if viewer doesn't have permission
       if (!canSeeSensitive) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { salary, ssn, address, performanceRating, ...publicFields } = serializedUser;
         return publicFields;
       }
@@ -77,7 +78,7 @@ export const userRouter = router({
       const { limit, cursor, search, department, role } = input;
 
       // Build where clause for filtering
-      const where: any = {};
+      const where: Prisma.UserWhereInput = {};
 
       if (search) {
         where.OR = [
@@ -121,6 +122,7 @@ export const userRouter = router({
         const serializedUser = serializeUser(user);
 
         if (!canSeeSensitive) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { salary, ssn, address, performanceRating, ...publicFields } = serializedUser;
           return publicFields;
         }
@@ -176,7 +178,7 @@ export const userRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Convert salary to Decimal if provided
-      const data: any = { ...input.data };
+      const data = { ...input.data };
       if (data.salary !== undefined) {
         data.salary = data.salary;
       }

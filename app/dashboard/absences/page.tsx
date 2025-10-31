@@ -1,30 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { format } from 'date-fns';
-import { MoreHorizontal, Trash2, Calendar as CalendarIcon } from 'lucide-react';
 import { trpc } from '@/lib/trpc/Provider';
 import { useAuthStore } from '@/stores/authStore';
 import { AbsenceRequestDialog } from '@/components/AbsenceRequestDialog';
 import { AbsenceCalendar } from '@/components/AbsenceCalendar';
+import { AbsenceTable } from '@/components/AbsenceTable';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,31 +18,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import type { AbsenceStatus } from '@prisma/client';
-
-type AbsenceWithUser = {
-  id: string;
-  userId: string;
-  startDate: string | Date;
-  endDate: string | Date;
-  reason: string;
-  status: AbsenceStatus;
-  createdAt: string | Date;
-  updatedAt: string | Date;
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-    avatar: string | null;
-    role: string;
-    department: string | null;
-    title: string | null;
-  };
-};
 
 /**
  * Absences management page
@@ -129,135 +90,6 @@ export default function AbsencesPage() {
 
   const handleReject = (id: string) => {
     updateStatusMutation.mutate({ id, status: 'REJECTED' });
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'APPROVED':
-        return <Badge variant="default">Approved</Badge>;
-      case 'REJECTED':
-        return <Badge variant="destructive">Rejected</Badge>;
-      case 'PENDING':
-        return <Badge variant="secondary">Pending</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
-    }
-  };
-
-  const AbsenceTable = ({
-    absences,
-    showUser = false,
-    showActions = true,
-    showApproval = false,
-  }: {
-    absences: AbsenceWithUser[] | undefined;
-    showUser?: boolean;
-    showActions?: boolean;
-    showApproval?: boolean;
-  }) => {
-    if (!absences || absences.length === 0) {
-      return (
-        <div className="text-center py-12 text-muted-foreground">
-          <CalendarIcon className="mx-auto h-12 w-12 opacity-20 mb-4" />
-          <p>No absence requests found</p>
-        </div>
-      );
-    }
-
-    return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            {showUser && <TableHead>Employee</TableHead>}
-            <TableHead>Start Date</TableHead>
-            <TableHead>End Date</TableHead>
-            <TableHead>Duration</TableHead>
-            <TableHead>Reason</TableHead>
-            <TableHead>Status</TableHead>
-            {(showActions || showApproval) && <TableHead className="text-right">Actions</TableHead>}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {absences.map((absence) => {
-            const startDate = new Date(absence.startDate);
-            const endDate = new Date(absence.endDate);
-            const duration = Math.ceil(
-              (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
-            ) + 1;
-
-            return (
-              <TableRow key={absence.id}>
-                {showUser && absence.user && (
-                  <TableCell className="font-medium">
-                    <div>
-                      <div>{absence.user.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {absence.user.department}
-                      </div>
-                    </div>
-                  </TableCell>
-                )}
-                <TableCell>{format(startDate, 'PPP')}</TableCell>
-                <TableCell>{format(endDate, 'PPP')}</TableCell>
-                <TableCell>
-                  {duration} {duration === 1 ? 'day' : 'days'}
-                </TableCell>
-                <TableCell className="max-w-xs">
-                  <div className="truncate" title={absence.reason}>
-                    {absence.reason}
-                  </div>
-                </TableCell>
-                <TableCell>{getStatusBadge(absence.status)}</TableCell>
-                {(showActions || showApproval) && (
-                  <TableCell className="text-right">
-                    {showApproval && absence.status === 'PENDING' ? (
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="default"
-                          onClick={() => handleApprove(absence.id)}
-                          disabled={updateStatusMutation.isPending}
-                        >
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleReject(absence.id)}
-                          disabled={updateStatusMutation.isPending}
-                        >
-                          Reject
-                        </Button>
-                      </div>
-                    ) : showActions && absence.status === 'PENDING' ? (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => handleDelete(absence.id)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete Request
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    ) : null}
-                  </TableCell>
-                )}
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    );
   };
 
   return (
@@ -331,7 +163,11 @@ export default function AbsencesPage() {
                   <Skeleton className="h-12 w-full" />
                 </div>
               ) : (
-                <AbsenceTable absences={myAbsences} />
+                <AbsenceTable
+                  absences={myAbsences}
+                  onDelete={handleDelete}
+                  isUpdating={deleteMutation.isPending}
+                />
               )}
             </CardContent>
           </Card>
@@ -360,7 +196,15 @@ export default function AbsencesPage() {
                     <Skeleton className="h-12 w-full" />
                   </div>
                 ) : (
-                  <AbsenceTable absences={allAbsences} showUser showApproval showActions={false} />
+                  <AbsenceTable
+                    absences={allAbsences}
+                    showUser
+                    showApproval
+                    showActions={false}
+                    onApprove={handleApprove}
+                    onReject={handleReject}
+                    isUpdating={updateStatusMutation.isPending}
+                  />
                 )}
               </CardContent>
             </Card>

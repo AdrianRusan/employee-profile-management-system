@@ -13,6 +13,7 @@ export interface Context {
 }
 
 // Create context for tRPC
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function createContext(opts?: FetchCreateContextFnOptions): Promise<Context> {
   const session = await getCurrentUser();
 

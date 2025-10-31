@@ -96,7 +96,7 @@ export function AvatarUpload({
         setIsUploading(false);
       }
     },
-    [userId, currentAvatar, updateAvatarMutation, onUploadSuccess]
+    [userId, currentAvatar, updateAvatarMutation]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -117,7 +117,7 @@ export function AvatarUpload({
       });
       setPreview(null);
       toast.success('Avatar removed successfully');
-    } catch (error) {
+    } catch {
       toast.error('Failed to remove avatar');
     } finally {
       setIsUploading(false);
