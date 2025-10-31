@@ -8,11 +8,17 @@ import { Page } from '@playwright/test';
  */
 export async function login(page: Page, email: string) {
   await page.goto('/login');
+  await page.waitForLoadState('networkidle');
+
+  // Wait for form to be visible
+  await page.locator('input[name="email"]').waitFor({ state: 'visible', timeout: 5000 });
+
   await page.fill('input[name="email"]', email);
   await page.click('button[type="submit"]');
 
-  // Wait for redirect to dashboard
-  await page.waitForURL('/dashboard', { timeout: 10000 });
+  // Wait for redirect to dashboard with extended timeout for WebKit
+  await page.waitForURL('/dashboard', { timeout: 15000 });
+  await page.waitForLoadState('networkidle');
 }
 
 /**

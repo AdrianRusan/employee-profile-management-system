@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { loginAsEmployee, loginAsManager } from './helpers/auth';
 import { fillAbsenceRequest } from './helpers/absence';
+import { navigateToProfile } from './helpers/navigation';
 
 test.describe('Absence Management', () => {
   test('Employee should request time off', async ({ page }) => {
@@ -8,10 +9,11 @@ test.describe('Absence Management', () => {
 
     // Navigate to own profile
     await page.goto('/dashboard/profiles');
-    await page.click('text=David Developer');
+    await navigateToProfile(page, 'David Developer');
 
     // Go to Absences tab
-    await page.click('text=Absences');
+    await page.locator('[role="tablist"]').locator('[role="tab"]:has-text("Absences")').click();
+    await page.waitForLoadState('networkidle');
 
     // Click to request new absence
     const requestButton = page.locator('button:has-text("Request Time Off"), button:has-text("New Request")');
@@ -31,8 +33,9 @@ test.describe('Absence Management', () => {
     await loginAsEmployee(page);
 
     await page.goto('/dashboard/profiles');
-    await page.click('text=David Developer');
-    await page.click('text=Absences');
+    await navigateToProfile(page, 'David Developer');
+    await page.locator('[role="tablist"]').locator('[role="tab"]:has-text("Absences")').click();
+    await page.waitForLoadState('networkidle');
 
     const requestButton = page.locator('button:has-text("Request Time Off"), button:has-text("New Request")');
     await requestButton.click();
@@ -49,8 +52,9 @@ test.describe('Absence Management', () => {
     await loginAsEmployee(page);
 
     await page.goto('/dashboard/profiles');
-    await page.click('text=David Developer');
-    await page.click('text=Absences');
+    await navigateToProfile(page, 'David Developer');
+    await page.locator('[role="tablist"]').locator('[role="tab"]:has-text("Absences")').click();
+    await page.waitForLoadState('networkidle');
 
     const requestButton = page.locator('button:has-text("Request Time Off"), button:has-text("New Request")');
     await requestButton.click();
@@ -66,8 +70,9 @@ test.describe('Absence Management', () => {
     await loginAsEmployee(page);
 
     await page.goto('/dashboard/profiles');
-    await page.click('text=David Developer');
-    await page.click('text=Absences');
+    await navigateToProfile(page, 'David Developer');
+    await page.locator('[role="tablist"]').locator('[role="tab"]:has-text("Absences")').click();
+    await page.waitForLoadState('networkidle');
 
     // Should see absence calendar or list
     // Either calendar component or list of requests should be visible
@@ -82,8 +87,9 @@ test.describe('Absence Management', () => {
 
     // Navigate to employee profile
     await page.goto('/dashboard/profiles');
-    await page.click('text=David Developer');
-    await page.click('text=Absences');
+    await navigateToProfile(page, 'David Developer');
+    await page.locator('[role="tablist"]').locator('[role="tab"]:has-text("Absences")').click();
+    await page.waitForLoadState('networkidle');
 
     // Should see employee's absence requests
     await expect(page.locator('text=/absence|time off/i')).toBeVisible();
@@ -94,8 +100,9 @@ test.describe('Absence Management', () => {
 
     // Go to absence dashboard or employee profile
     await page.goto('/dashboard/profiles');
-    await page.click('text=David Developer');
-    await page.click('text=Absences');
+    await navigateToProfile(page, 'David Developer');
+    await page.locator('[role="tablist"]').locator('[role="tab"]:has-text("Absences")').click();
+    await page.waitForLoadState('networkidle');
 
     // Look for pending requests and approve button
     const approveButton = page.locator('button:has-text("Approve")').first();
@@ -115,8 +122,9 @@ test.describe('Absence Management', () => {
     await loginAsManager(page);
 
     await page.goto('/dashboard/profiles');
-    await page.click('text=David Developer');
-    await page.click('text=Absences');
+    await navigateToProfile(page, 'David Developer');
+    await page.locator('[role="tablist"]').locator('[role="tab"]:has-text("Absences")').click();
+    await page.waitForLoadState('networkidle');
 
     // Look for pending requests and reject button
     const rejectButton = page.locator('button:has-text("Reject")').first();
@@ -142,8 +150,9 @@ test.describe('Absence Management', () => {
     await loginAsEmployee(page);
 
     await page.goto('/dashboard/profiles');
-    await page.click('text=David Developer');
-    await page.click('text=Absences');
+    await navigateToProfile(page, 'David Developer');
+    await page.locator('[role="tablist"]').locator('[role="tab"]:has-text("Absences")').click();
+    await page.waitForLoadState('networkidle');
 
     // Create first request
     const requestButton = page.locator('button:has-text("Request Time Off"), button:has-text("New Request")');
@@ -167,8 +176,9 @@ test.describe('Absence Management', () => {
     await loginAsEmployee(page);
 
     await page.goto('/dashboard/profiles');
-    await page.click('text=David Developer');
-    await page.click('text=Absences');
+    await navigateToProfile(page, 'David Developer');
+    await page.locator('[role="tablist"]').locator('[role="tab"]:has-text("Absences")').click();
+    await page.waitForLoadState('networkidle');
 
     // Should see calendar component
     // Check for common calendar elements
@@ -182,8 +192,9 @@ test.describe('Absence Management', () => {
     await loginAsEmployee(page);
 
     await page.goto('/dashboard/profiles');
-    await page.click('text=David Developer');
-    await page.click('text=Absences');
+    await navigateToProfile(page, 'David Developer');
+    await page.locator('[role="tablist"]').locator('[role="tab"]:has-text("Absences")').click();
+    await page.waitForLoadState('networkidle');
 
     // If there's an approved request, there should be no edit/delete button
     const approvedRequest = page.locator('text=APPROVED, text=Approved').first();
@@ -199,8 +210,9 @@ test.describe('Absence Management', () => {
     await loginAsEmployee(page);
 
     await page.goto('/dashboard/profiles');
-    await page.click('text=David Developer');
-    await page.click('text=Absences');
+    await navigateToProfile(page, 'David Developer');
+    await page.locator('[role="tablist"]').locator('[role="tab"]:has-text("Absences")').click();
+    await page.waitForLoadState('networkidle');
 
     // Look for pending request with cancel/delete button
     const cancelButton = page.locator('button:has-text("Cancel"), button:has-text("Delete")').first();

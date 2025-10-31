@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { loginAsEmployee, loginAsManager, loginAsCoworker } from './helpers/auth';
+import { navigateToProfile } from './helpers/navigation';
 
 test.describe('Profile Management', () => {
   test('Employee should view own complete profile', async ({ page }) => {
@@ -11,6 +12,8 @@ test.describe('Profile Management', () => {
 
     // Click on own profile
     await page.click('text=David Developer');
+    await page.waitForURL(/\/profiles\/[^/]+/);
+    await page.waitForLoadState('networkidle');
 
     // Should see all profile information
     await expect(page.locator('text=David Developer')).toBeVisible();
@@ -31,7 +34,7 @@ test.describe('Profile Management', () => {
 
     // Navigate to profiles and find employee
     await page.goto('/dashboard/profiles');
-    await page.click('text=David Developer');
+    await navigateToProfile(page, 'David Developer');
 
     // Should see all profile information including sensitive data
     await expect(page.locator('text=David Developer')).toBeVisible();
@@ -48,7 +51,7 @@ test.describe('Profile Management', () => {
 
     // Navigate to profiles and find employee
     await page.goto('/dashboard/profiles');
-    await page.click('text=David Developer');
+    await navigateToProfile(page, 'David Developer');
 
     // Should see basic profile information
     await expect(page.locator('text=David Developer')).toBeVisible();
@@ -69,10 +72,12 @@ test.describe('Profile Management', () => {
 
     // Go to own profile
     await page.goto('/dashboard/profiles');
-    await page.click('text=David Developer');
+    await navigateToProfile(page, 'David Developer');
 
     // Click edit button
     await page.click('button:has-text("Edit Profile")');
+    await page.locator('[role="dialog"]').waitFor({ state: 'visible' });
+    await page.locator('textarea[name="bio"]').waitFor({ state: 'visible' });
 
     // Dialog should open
     await expect(page.locator('text=Edit Profile')).toBeVisible();
@@ -93,10 +98,12 @@ test.describe('Profile Management', () => {
 
     // Navigate to employee profile
     await page.goto('/dashboard/profiles');
-    await page.click('text=David Developer');
+    await navigateToProfile(page, 'David Developer');
 
     // Click edit button
     await page.click('button:has-text("Edit Profile")');
+    await page.locator('[role="dialog"]').waitFor({ state: 'visible' });
+    await page.locator('input[name="title"]').waitFor({ state: 'visible' });
 
     // Edit title
     await page.fill('input[name="title"]', 'Lead Software Engineer');
@@ -154,10 +161,10 @@ test.describe('Profile Management', () => {
     await page.goto('/dashboard/profiles');
 
     // Filter by Engineering department
-    const departmentFilter = page.locator('select, button:has-text("Department")').first();
-    if (await departmentFilter.isVisible()) {
-      await departmentFilter.click();
-      await page.click('text=Engineering');
+    const departmentFilter = page.getByRole('combobox').filter({ hasText: /department/i }).or(page.locator('select'));
+    if (await departmentFilter.count() > 0) {
+      await departmentFilter.first().click();
+      await page.getByRole('option', { name: 'Engineering' }).click();
 
       // Should show Engineering employees
       await expect(page.locator('text=David Developer')).toBeVisible();
@@ -172,10 +179,10 @@ test.describe('Profile Management', () => {
     await loginAsEmployee(page);
 
     await page.goto('/dashboard/profiles');
-    await page.click('text=Emily Manager');
+    await navigateToProfile(page, 'Emily Manager');
 
     // Should display role badge - check for badge component or text
-    await expect(page.getByText('Manager', { exact: false })).toBeVisible();
+    await expect(page.getByRole('status').filter({ hasText: /MANAGER/i })).toBeVisible();
   });
 
   test('Avatar upload should work', async ({ page }) => {

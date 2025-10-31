@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { loginAsEmployee, loginAsManager, loginAsCoworker } from './helpers/auth';
+import { navigateToProfile } from './helpers/navigation';
 
 test.describe('Feedback System', () => {
   test('Employee should submit feedback to coworker', async ({ page }) => {
@@ -7,10 +8,11 @@ test.describe('Feedback System', () => {
 
     // Navigate to coworker profile
     await page.goto('/dashboard/profiles');
-    await page.click('text=Sarah Designer');
+    await navigateToProfile(page, 'Sarah Designer');
 
-    // Go to Feedback tab
-    await page.click('text=Feedback');
+    // Go to Feedback tab (use scoped selector to avoid clicking sidebar)
+    await page.locator('[role="tablist"]').locator('[role="tab"]:has-text("Feedback")').click();
+    await page.waitForLoadState('networkidle');
 
     // Fill in feedback form
     const feedbackContent = `Great work on the marketing campaign! ${Date.now()}`;
@@ -32,7 +34,9 @@ test.describe('Feedback System', () => {
     // Navigate to coworker profile feedback tab
     await page.goto('/dashboard/profiles');
     await page.click('text=Sarah Designer');
-    await page.click('text=Feedback');
+    await page.waitForURL(/\/profiles\/[^/]+/);
+    await page.locator('[role="tablist"]').locator('[role="tab"]:has-text("Feedback")').click();
+    await page.waitForLoadState('networkidle');
 
     // Try to submit too short feedback
     await page.getByPlaceholder('Share your thoughts, observations, or suggestions...').fill('Too short');
@@ -48,7 +52,9 @@ test.describe('Feedback System', () => {
     // Navigate to coworker profile feedback tab
     await page.goto('/dashboard/profiles');
     await page.click('text=Sarah Designer');
-    await page.click('text=Feedback');
+    await page.waitForURL(/\/profiles\/[^/]+/);
+    await page.locator('[role="tablist"]').locator('[role="tab"]:has-text("Feedback")').click();
+    await page.waitForLoadState('networkidle');
 
     // Try to submit too long feedback (> 2000 characters)
     const longFeedback = 'A'.repeat(2001);
@@ -65,7 +71,9 @@ test.describe('Feedback System', () => {
     // Navigate to coworker profile feedback tab
     await page.goto('/dashboard/profiles');
     await page.click('text=Sarah Designer');
-    await page.click('text=Feedback');
+    await page.waitForURL(/\/profiles\/[^/]+/);
+    await page.locator('[role="tablist"]').locator('[role="tab"]:has-text("Feedback")').click();
+    await page.waitForLoadState('networkidle');
 
     // Fill in feedback
     const originalFeedback = 'You did good work on the project and I think you should keep it up.';
@@ -98,10 +106,11 @@ test.describe('Feedback System', () => {
 
     // Navigate to own profile
     await page.goto('/dashboard/profiles');
-    await page.click('text=David Developer');
+    await navigateToProfile(page, 'David Developer');
 
-    // Go to Feedback tab
-    await page.click('text=Feedback');
+    // Go to Feedback tab (use scoped selector to avoid clicking sidebar)
+    await page.locator('[role="tablist"]').locator('[role="tab"]:has-text("Feedback")').click();
+    await page.waitForLoadState('networkidle');
 
     // Feedback form should NOT be visible
     await expect(page.getByPlaceholder('Share your thoughts, observations, or suggestions...')).not.toBeVisible();
@@ -116,10 +125,11 @@ test.describe('Feedback System', () => {
 
     // Navigate to own profile
     await page.goto('/dashboard/profiles');
-    await page.click('text=David Developer');
+    await navigateToProfile(page, 'David Developer');
 
-    // Go to Feedback tab
-    await page.click('text=Feedback');
+    // Go to Feedback tab (use scoped selector to avoid clicking sidebar)
+    await page.locator('[role="tablist"]').locator('[role="tab"]:has-text("Feedback")').click();
+    await page.waitForLoadState('networkidle');
 
     // Should be on feedback tab (check for tab panel or feedback content)
     await expect(page.locator('[role="tabpanel"]')).toBeVisible();
@@ -133,10 +143,11 @@ test.describe('Feedback System', () => {
 
     // Navigate to employee profile
     await page.goto('/dashboard/profiles');
-    await page.click('text=David Developer');
+    await navigateToProfile(page, 'David Developer');
 
-    // Go to Feedback tab
-    await page.click('text=Feedback');
+    // Go to Feedback tab (use scoped selector to avoid clicking sidebar)
+    await page.locator('[role="tablist"]').locator('[role="tab"]:has-text("Feedback")').click();
+    await page.waitForLoadState('networkidle');
 
     // Should be on feedback tab and can submit feedback (manager has permission)
     await expect(page.locator('[role="tabpanel"]')).toBeVisible();
@@ -150,10 +161,11 @@ test.describe('Feedback System', () => {
 
     // Navigate to employee profile
     await page.goto('/dashboard/profiles');
-    await page.click('text=David Developer');
+    await navigateToProfile(page, 'David Developer');
 
-    // Go to Feedback tab
-    await page.click('text=Feedback');
+    // Go to Feedback tab (use scoped selector to avoid clicking sidebar)
+    await page.locator('[role="tablist"]').locator('[role="tab"]:has-text("Feedback")').click();
+    await page.waitForLoadState('networkidle');
 
     // Should see permission denied message or feedback form should not be visible
     // Check that coworker cannot submit feedback
@@ -166,7 +178,9 @@ test.describe('Feedback System', () => {
     // Navigate to coworker profile and submit feedback
     await page.goto('/dashboard/profiles');
     await page.click('text=Sarah Designer');
-    await page.click('text=Feedback');
+    await page.waitForURL(/\/profiles\/[^/]+/);
+    await page.locator('[role="tablist"]').locator('[role="tab"]:has-text("Feedback")').click();
+    await page.waitForLoadState('networkidle');
 
     const feedbackContent = `Timestamped feedback ${Date.now()}`;
     await page.getByPlaceholder('Share your thoughts, observations, or suggestions...').fill(feedbackContent);
@@ -188,7 +202,9 @@ test.describe('Feedback System', () => {
     // Navigate to coworker profile feedback tab
     await page.goto('/dashboard/profiles');
     await page.click('text=Sarah Designer');
-    await page.click('text=Feedback');
+    await page.waitForURL(/\/profiles\/[^/]+/);
+    await page.locator('[role="tablist"]').locator('[role="tab"]:has-text("Feedback")').click();
+    await page.waitForLoadState('networkidle');
 
     // Fill in feedback and polish it
     await page.getByPlaceholder('Share your thoughts, observations, or suggestions...').fill('Good work on your tasks recently keep going.');
@@ -220,7 +236,9 @@ test.describe('Feedback System', () => {
     // Navigate to coworker profile
     await page.goto('/dashboard/profiles');
     await page.click('text=Sarah Designer');
-    await page.click('text=Feedback');
+    await page.waitForURL(/\/profiles\/[^/]+/);
+    await page.locator('[role="tablist"]').locator('[role="tab"]:has-text("Feedback")').click();
+    await page.waitForLoadState('networkidle');
 
     // Submit feedback
     const feedbackContent = `Cleared feedback ${Date.now()}`;
