@@ -1,6 +1,14 @@
 # Employee Profile Management System
 
+[![CI](https://github.com/USERNAME/employee-profile-management-system/actions/workflows/ci.yml/badge.svg)](https://github.com/USERNAME/employee-profile-management-system/actions/workflows/ci.yml)
+[![Deploy](https://github.com/USERNAME/employee-profile-management-system/actions/workflows/deploy.yml/badge.svg)](https://github.com/USERNAME/employee-profile-management-system/actions/workflows/deploy.yml)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.x-black.svg)](https://nextjs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A modern, AI-enhanced employee profile management system built with Next.js 15, demonstrating technical excellence, product thinking, and innovative approaches to enterprise software.
+
+> Note: Replace `USERNAME` in the badge URLs above with your GitHub username or organization name.
 
 ## Overview
 
@@ -103,6 +111,18 @@ HUGGINGFACE_API_KEY="your-huggingface-api-key"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
+**Important:** Generate a secure `SESSION_SECRET` (minimum 32 characters):
+
+```bash
+# Using Node.js (recommended)
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+# Using OpenSSL
+openssl rand -hex 32
+```
+
+Copy the generated string and use it as your `SESSION_SECRET` value. The application will refuse to start if this variable is missing or less than 32 characters.
+
 ### 4. Set Up the Database
 
 Make sure PostgreSQL is running, then create the database and run migrations:
@@ -195,10 +215,12 @@ employee-profile-management-system/
 ## Security Features
 
 - Role-based access control (RBAC)
-- Session-based authentication
+- Session-based authentication with iron-session
+- Secure session secret validation (minimum 32 characters, fail-fast on startup)
+- Strict CSRF protection (sameSite: strict cookies)
 - Input validation with Zod
 - SQL injection prevention via Prisma ORM
-- XSS and CSRF protection
+- XSS protection
 - Sensitive data field filtering
 
 ## Performance

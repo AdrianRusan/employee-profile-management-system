@@ -321,7 +321,158 @@ for better reusability.
 - Add **body for context** (why, not what)
 - Reference **issues/PRs** in footer
 
-## Pull Request Process
+## Continuous Integration / Continuous Deployment (CI/CD)
+
+### Overview
+
+This project uses GitHub Actions for automated testing, quality checks, and deployment. Every push and pull request triggers our CI pipeline to ensure code quality and prevent breaking changes.
+
+### CI Pipeline
+
+Our CI workflow (`.github/workflows/ci.yml`) runs automatically on:
+- Every push to `main` or `master` branch
+- Every pull request targeting `main` or `master`
+
+The pipeline consists of four parallel jobs:
+
+#### 1. Lint Job
+- Runs ESLint to check code style and quality
+- Ensures consistent code formatting
+- Command: `npm run lint`
+
+#### 2. Type Check Job
+- Verifies TypeScript type safety
+- Catches type errors before runtime
+- Generates Prisma Client for type safety
+- Command: `npm run type-check`
+
+#### 3. Test Job
+- Sets up PostgreSQL test database
+- Runs all unit tests with Jest
+- Runs E2E tests with Playwright
+- Uploads test reports as artifacts
+- Commands: `npm test` and `npm run test:e2e`
+
+**Environment:**
+- PostgreSQL 15 service container
+- Test database seeded with sample data
+- Playwright browsers installed
+
+#### 4. Build Job
+- Builds the Next.js application
+- Ensures production build succeeds
+- Uploads build artifacts
+- Command: `npm run build`
+
+### Deployment Pipeline
+
+Our deployment workflow (`.github/workflows/deploy.yml`) runs automatically:
+- When code is pushed to `main` or `master`
+- Only after all CI checks pass successfully
+- Can be triggered manually via GitHub Actions UI
+
+**Deployment Platforms:**
+- Primary: Vercel (configured)
+- Alternatives: Railway, Netlify (commented templates available)
+
+**Required Secrets:**
+Configure these in GitHub Settings > Secrets and variables > Actions:
+- `VERCEL_TOKEN` - Vercel authentication token
+- `VERCEL_ORG_ID` - Your Vercel organization ID
+- `VERCEL_PROJECT_ID` - Your Vercel project ID
+
+### Branch Protection
+
+The `main` branch is protected with the following rules:
+- Requires pull request before merging
+- Requires at least 1 approval
+- Requires all CI status checks to pass:
+  - lint
+  - type-check
+  - test
+  - build
+- Requires branches to be up to date before merging
+- Requires conversation resolution before merging
+
+**This means:**
+- You cannot push directly to `main`
+- All changes must go through pull requests
+- CI must pass before merging
+- Code review is required
+
+### Local CI Testing
+
+Before pushing, you can run CI checks locally:
+
+```bash
+# Run all checks at once
+npm run validate
+
+# Or run individually
+npm run lint          # Lint check
+npm run type-check    # TypeScript check
+npm test              # Unit tests
+npm run test:e2e      # E2E tests
+npm run build         # Build check
+```
+
+### CI Status Badges
+
+Check the README.md for real-time CI status:
+- CI badge shows the status of the latest CI run
+- Deploy badge shows deployment status
+- Click badges to view detailed logs
+
+### Troubleshooting CI Failures
+
+#### Lint Failures
+```bash
+# Fix auto-fixable issues
+npm run lint:fix
+
+# Check what would be fixed
+npm run lint
+```
+
+#### Type Check Failures
+```bash
+# Run type check locally
+npm run type-check
+
+# Generate Prisma Client if needed
+npx prisma generate
+```
+
+#### Test Failures
+```bash
+# Run tests locally
+npm test
+
+# Run specific test file
+npm test -- path/to/test.test.ts
+
+# Run E2E tests in UI mode
+npm run test:e2e:ui
+```
+
+#### Build Failures
+```bash
+# Run build locally
+npm run build
+
+# Check for environment variable issues
+# Make sure .env has all required variables
+```
+
+### CI Performance
+
+Our CI pipeline is optimized for speed:
+- Jobs run in parallel (not sequential)
+- Uses npm cache to speed up installations
+- Playwright browsers cached between runs
+- Typical CI run: 3-5 minutes
+
+### Pull Request Process
 
 ### Before Submitting
 
@@ -332,6 +483,7 @@ for better reusability.
 - [ ] Documentation updated if needed
 - [ ] Commit messages follow conventions
 - [ ] Branch is up to date with `main`
+- [ ] Local CI checks pass (`npm run validate`)
 
 ### Creating a Pull Request
 
@@ -377,10 +529,28 @@ Closes #issue_number
 ### Review Process
 
 1. **Automated checks** must pass (CI/CD)
+   - Wait for all 4 CI jobs to complete (lint, type-check, test, build)
+   - Check the "Checks" tab on your PR to view detailed logs
+   - Fix any failures and push new commits to re-trigger CI
+   - All checks must show green checkmarks before merge
 2. **At least one approval** required
 3. **Address review comments** promptly
 4. **Resolve conflicts** with main branch
 5. **Squash commits** if requested
+
+### Viewing CI Results
+
+On your pull request:
+1. Scroll to the bottom to see CI status checks
+2. Click "Details" next to any check to view logs
+3. Green checkmark = passed
+4. Red X = failed (click to see why)
+5. Yellow circle = running
+
+**Common CI Check Statuses:**
+- "All checks have passed" - Ready for review/merge
+- "Some checks were not successful" - Fix failures before merging
+- "Checks are running" - Wait for completion
 
 ### After Approval
 
