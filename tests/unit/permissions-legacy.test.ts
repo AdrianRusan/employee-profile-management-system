@@ -7,7 +7,6 @@ import {
   canGiveFeedback,
   canDeleteFeedback,
 } from '@/lib/permissions';
-import { Role } from '@prisma/client';
 
 describe('Legacy permission functions (deprecated)', () => {
   describe('canViewSensitiveData', () => {

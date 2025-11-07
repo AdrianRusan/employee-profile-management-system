@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { createSession, deleteSession } from '@/lib/session';
-import { AppErrors, findOrThrow } from '@/lib/errors';
+import { findOrThrow } from '@/lib/errors';
 import { logAuthEvent } from '@/lib/logger';
 
 export const authRouter = router({

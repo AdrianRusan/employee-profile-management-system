@@ -5,7 +5,7 @@
  * should be done with E2E tests using Playwright.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 // Mock next/headers
 vi.mock('next/headers', () => ({

@@ -77,9 +77,9 @@ async function createAbsenceWithTransaction(input: AbsenceInput) {
         timeout: 10000,
       }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Handle Prisma serialization errors
-    if (error.code === 'P2034') {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2034') {
       throw new Error('Conflict detected. Please try again.');
     }
     throw error;

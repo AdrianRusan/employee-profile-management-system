@@ -209,7 +209,7 @@ test.describe('CSRF Protection', () => {
     expect(newToken).not.toBe(initialToken);
   });
 
-  test('should validate session cookie security settings', async ({ page, context }) => {
+  test('should validate session cookie security settings', async ({ page: _page, context }) => {
     // Check session cookie security
     const cookies = await context.cookies();
     const sessionCookie = cookies.find(c => c.name === 'employee_profile_session');

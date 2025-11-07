@@ -65,12 +65,12 @@ export function ErrorBoundaryTest() {
         </div>
 
         <div className="text-xs text-orange-700 space-y-1">
-          <p><strong>Expected behavior after clicking "Throw Error":</strong></p>
+          <p><strong>Expected behavior after clicking &ldquo;Throw Error&rdquo;:</strong></p>
           <ul className="list-disc list-inside space-y-1 ml-2">
             <li>This component should be replaced with error fallback UI</li>
             <li>The rest of the page should continue working normally</li>
             <li>Error should be logged to console</li>
-            <li>"Try Again" button should reset and show this component again</li>
+            <li>&ldquo;Try Again&rdquo; button should reset and show this component again</li>
           </ul>
         </div>
       </CardContent>

@@ -67,7 +67,7 @@ Sentry.init({
   ],
 
   // Before sending event to Sentry, allow modifications
-  beforeSend(event, hint) {
+  beforeSend(event, _hint) {
     // Filter out events in development (optional)
     if (process.env.NODE_ENV === 'development' && !process.env.SENTRY_FORCE_DEV) {
       console.log('Sentry event (not sent in dev):', event);

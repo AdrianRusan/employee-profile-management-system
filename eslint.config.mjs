@@ -12,7 +12,28 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Additional ignores:
+    "**/.next/**",
+    ".worktrees/**",
+    "node_modules/**",
+    "coverage/**",
+    // Config files that use CommonJS:
+    "jest.config.js",
+    "*.config.js",
   ]),
+  {
+    rules: {
+      // Allow unused vars that start with underscore (intentionally unused parameters)
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

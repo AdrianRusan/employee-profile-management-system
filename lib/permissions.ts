@@ -60,7 +60,7 @@ export const Permissions = {
      * - All authenticated users can view profiles
      * - Sensitive fields are filtered separately via viewSensitive()
      */
-    view: (viewer: SessionUser, target: Pick<User, 'id'>): boolean => {
+    view: (_viewer: SessionUser, _target: Pick<User, 'id'>): boolean => {
       // Everyone can view profiles (sensitive fields filtered separately)
       return true;
     },
@@ -136,7 +136,7 @@ export const Permissions = {
      * Rules:
      * - All authenticated users can create absence requests
      */
-    create: (viewer: SessionUser): boolean => {
+    create: (_viewer: SessionUser): boolean => {
       return true;
     },
 

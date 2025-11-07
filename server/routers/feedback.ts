@@ -37,7 +37,7 @@ export const feedbackRouter = router({
       }, 'Creating feedback');
 
       // Verify receiver exists and is not deleted
-      const receiver = await findOrThrow(
+      void await findOrThrow(
         ctx.prisma.user.findFirst({
           where: {
             id: receiverId,

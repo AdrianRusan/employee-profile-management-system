@@ -16,12 +16,12 @@ import { USER_PUBLIC_SELECT, USER_SENSITIVE_SELECT } from '@/lib/prisma/selects'
  * Helper function to serialize user data for client components
  * Converts Prisma Decimal types to strings to avoid serialization errors
  */
-function serializeUser<T extends Record<string, any>>(user: T): any {
+function serializeUser<T extends Record<string, unknown>>(user: T): T & { salary?: string | null } {
   // If salary field exists, convert Decimal to string
-  if ('salary' in user && user.salary !== undefined) {
+  if ('salary' in user && user.salary !== undefined && user.salary !== null) {
     return {
       ...user,
-      salary: user.salary?.toString() ?? null,
+      salary: String(user.salary),
     };
   }
   // Return as-is if no salary field

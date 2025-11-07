@@ -13,7 +13,7 @@
  * Related: TODO-011 - Absence Overlap Race Condition
  */
 
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { absenceRouter } from '../absence';
 import { Session } from '@/lib/auth/session';
 

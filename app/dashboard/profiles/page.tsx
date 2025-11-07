@@ -49,7 +49,7 @@ const columns: ColumnDef<{
   ssn?: string | null;
   address?: string | null;
   performanceRating?: string | null;
-  [key: string]: any;
+  [key: string]: unknown;
 }>[] = [
   {
     accessorKey: 'name',
@@ -143,7 +143,19 @@ export default function ProfilesPage() {
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
-    data: users as any, // Type assertion: users can have public or sensitive fields, but columns only use public fields
+    data: users as Array<{
+      id: string;
+      name: string;
+      email: string;
+      department: string | null;
+      title: string | null;
+      role: string;
+      salary?: string | null;
+      ssn?: string | null;
+      address?: string | null;
+      performanceRating?: string | null;
+      [key: string]: unknown;
+    }>, // Type assertion: users can have public or sensitive fields, but columns only use public fields
     columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
