@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../trpc';
 import {
   feedbackSchema,
@@ -7,8 +6,10 @@ import {
   deleteFeedbackSchema,
   getFeedbackForUserSchema,
 } from '@/lib/validations/feedback';
-import { canViewFeedback, canDeleteFeedback } from '@/lib/permissions';
+import { Permissions, assertPermission } from '@/lib/permissions';
 import { polishFeedback } from '@/lib/ai/huggingface';
+import { USER_FEEDBACK_SELECT } from '@/lib/prisma/selects';
+import { findOrThrow } from '@/lib/errors';
 
 /**
  * Feedback router for peer feedback management
@@ -29,17 +30,23 @@ export const feedbackRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { receiverId, content, polishedContent, isPolished } = input;
 
-      // Verify receiver exists
-      const receiver = await ctx.prisma.user.findUnique({
-        where: { id: receiverId },
-      });
+      ctx.logger.info({
+        receiverId,
+        isPolished,
+        contentLength: content.length,
+      }, 'Creating feedback');
 
-      if (!receiver) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Receiver not found',
-        });
-      }
+      // Verify receiver exists and is not deleted
+      const receiver = await findOrThrow(
+        ctx.prisma.user.findFirst({
+          where: {
+            id: receiverId,
+            deletedAt: null
+          },
+        }),
+        'Receiver',
+        receiverId
+      );
 
       // Create feedback entry
       const feedback = await ctx.prisma.feedback.create({
@@ -52,25 +59,19 @@ export const feedbackRouter = router({
         },
         include: {
           giver: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              avatar: true,
-              role: true,
-            },
+            select: USER_FEEDBACK_SELECT,
           },
           receiver: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              avatar: true,
-              role: true,
-            },
+            select: USER_FEEDBACK_SELECT,
           },
         },
       });
+
+      ctx.logger.info({
+        feedbackId: feedback.id,
+        receiverId,
+        isPolished,
+      }, 'Feedback created successfully');
 
       return feedback;
     }),
@@ -84,39 +85,30 @@ export const feedbackRouter = router({
     .query(async ({ ctx, input }) => {
       const { userId } = input;
 
-      // Verify user exists
-      const user = await ctx.prisma.user.findUnique({
-        where: { id: userId },
-      });
+      // Verify user exists and is not deleted
+      await findOrThrow(
+        ctx.prisma.user.findFirst({
+          where: {
+            id: userId,
+            deletedAt: null
+          },
+        }),
+        'User',
+        userId
+      );
 
-      if (!user) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'User not found',
-        });
-      }
-
-      // Fetch all feedback for the user
+      // Fetch all feedback for the user (exclude soft-deleted feedback)
       const allFeedback = await ctx.prisma.feedback.findMany({
-        where: { receiverId: userId },
+        where: {
+          receiverId: userId,
+          deletedAt: null
+        },
         include: {
           giver: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              avatar: true,
-              role: true,
-            },
+            select: USER_FEEDBACK_SELECT,
           },
           receiver: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              avatar: true,
-              role: true,
-            },
+            select: USER_FEEDBACK_SELECT,
           },
         },
         orderBy: {
@@ -124,14 +116,9 @@ export const feedbackRouter = router({
         },
       });
 
-      // Filter feedback based on permissions
+      // Filter feedback based on centralized permissions
       const filteredFeedback = allFeedback.filter((feedback) => {
-        return canViewFeedback(
-          ctx.session.role,
-          ctx.session.userId,
-          feedback.receiverId,
-          feedback.giverId
-        );
+        return Permissions.feedback.view(ctx.session, feedback);
       });
 
       return filteredFeedback;
@@ -143,16 +130,13 @@ export const feedbackRouter = router({
    */
   getGiven: protectedProcedure.query(async ({ ctx }) => {
     const feedback = await ctx.prisma.feedback.findMany({
-      where: { giverId: ctx.session.userId },
+      where: {
+        giverId: ctx.session.userId,
+        deletedAt: null
+      },
       include: {
         receiver: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            avatar: true,
-            role: true,
-          },
+          select: USER_FEEDBACK_SELECT,
         },
       },
       orderBy: {
@@ -169,16 +153,13 @@ export const feedbackRouter = router({
    */
   getReceived: protectedProcedure.query(async ({ ctx }) => {
     const feedback = await ctx.prisma.feedback.findMany({
-      where: { receiverId: ctx.session.userId },
+      where: {
+        receiverId: ctx.session.userId,
+        deletedAt: null
+      },
       include: {
         giver: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            avatar: true,
-            role: true,
-          },
+          select: USER_FEEDBACK_SELECT,
         },
       },
       orderBy: {
@@ -195,12 +176,21 @@ export const feedbackRouter = router({
    */
   polishWithAI: protectedProcedure
     .input(polishFeedbackSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { content } = input;
+
+      ctx.logger.info({
+        contentLength: content.length,
+      }, 'Polishing feedback with AI');
 
       try {
         // Call HuggingFace API to polish the feedback
         const polished = await polishFeedback(content);
+
+        ctx.logger.info({
+          originalLength: content.length,
+          polishedLength: polished.length,
+        }, 'Feedback polished successfully');
 
         return {
           original: content,
@@ -208,7 +198,7 @@ export const feedbackRouter = router({
           success: true,
         };
       } catch (error) {
-        console.error('Error polishing feedback:', error);
+        ctx.logger.error({ error, contentLength: content.length }, 'Failed to polish feedback with AI');
 
         // Return original content as fallback
         return {
@@ -229,36 +219,33 @@ export const feedbackRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { id } = input;
 
+      ctx.logger.info({ feedbackId: id }, 'Deleting feedback');
+
       // Find the feedback entry
-      const feedback = await ctx.prisma.feedback.findUnique({
-        where: { id },
-      });
+      const feedback = await findOrThrow(
+        ctx.prisma.feedback.findUnique({
+          where: { id },
+        }),
+        'Feedback',
+        id
+      );
 
-      if (!feedback) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Feedback not found',
-        });
-      }
-
-      // Check if user has permission to delete this feedback
-      if (
-        !canDeleteFeedback(
-          ctx.session.role,
-          ctx.session.userId,
-          feedback.giverId
-        )
-      ) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'You do not have permission to delete this feedback',
-        });
-      }
+      // Check if user has permission to delete this feedback using centralized permissions
+      assertPermission(
+        Permissions.feedback.delete(ctx.session, feedback),
+        'You do not have permission to delete this feedback'
+      );
 
       // Delete the feedback
       await ctx.prisma.feedback.delete({
         where: { id },
       });
+
+      ctx.logger.info({
+        feedbackId: id,
+        giverId: feedback.giverId,
+        receiverId: feedback.receiverId,
+      }, 'Feedback deleted successfully');
 
       return { success: true };
     }),
@@ -272,21 +259,28 @@ export const feedbackRouter = router({
     .query(async ({ ctx, input }) => {
       const { userId } = input;
 
-      // Count feedback given
+      // Count feedback given (exclude soft-deleted)
       const givenCount = await ctx.prisma.feedback.count({
-        where: { giverId: userId },
+        where: {
+          giverId: userId,
+          deletedAt: null
+        },
       });
 
-      // Count feedback received
+      // Count feedback received (exclude soft-deleted)
       const receivedCount = await ctx.prisma.feedback.count({
-        where: { receiverId: userId },
+        where: {
+          receiverId: userId,
+          deletedAt: null
+        },
       });
 
-      // Count polished feedback
+      // Count polished feedback (exclude soft-deleted)
       const polishedCount = await ctx.prisma.feedback.count({
         where: {
           receiverId: userId,
           isPolished: true,
+          deletedAt: null
         },
       });
 

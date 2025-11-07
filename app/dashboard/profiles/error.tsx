@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import * as Sentry from '@sentry/nextjs';
 
 export default function ProfilesError({
   error,
@@ -16,6 +17,18 @@ export default function ProfilesError({
   const router = useRouter();
   useEffect(() => {
     console.error('Profiles error:', error);
+
+    // Send error to Sentry for tracking
+    Sentry.captureException(error, {
+      tags: {
+        errorBoundary: 'profiles',
+      },
+      contexts: {
+        errorInfo: {
+          digest: error.digest,
+        },
+      },
+    });
   }, [error]);
 
   return (

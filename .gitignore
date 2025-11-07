@@ -44,3 +44,14 @@ next-env.d.ts
 /public/uploads/*
 !/public/uploads/.gitkeep
 .worktrees
+
+# test artifacts
+/playwright-report/
+/test-results/
+/coverage/
+
+# documentation artifacts
+/todos/
+*RESOLUTION*.md
+*SUMMARY*.md
+verify-*.md

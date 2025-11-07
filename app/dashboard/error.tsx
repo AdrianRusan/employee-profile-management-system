@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import * as Sentry from '@sentry/nextjs';
 
 export default function DashboardError({
   error,
@@ -15,6 +16,18 @@ export default function DashboardError({
   useEffect(() => {
     // Log full error details once for debugging/observability in all environments
     console.error('Dashboard error:', error);
+
+    // Send error to Sentry for tracking
+    Sentry.captureException(error, {
+      tags: {
+        errorBoundary: 'dashboard',
+      },
+      contexts: {
+        errorInfo: {
+          digest: error.digest,
+        },
+      },
+    });
   }, [error]);
 
   return (

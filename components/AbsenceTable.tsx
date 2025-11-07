@@ -22,12 +22,13 @@ import { AbsenceRequest, User } from '@prisma/client';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-interface AbsenceWithUser extends Omit<AbsenceRequest, 'createdAt' | 'updatedAt' | 'startDate' | 'endDate'> {
+interface AbsenceWithUser extends Omit<AbsenceRequest, 'createdAt' | 'updatedAt' | 'startDate' | 'endDate' | 'deletedAt'> {
   user?: Partial<User> | null;
   createdAt: string | Date;
   updatedAt: string | Date;
   startDate: string | Date;
   endDate: string | Date;
+  deletedAt: string | Date | null;
 }
 
 interface AbsenceTableProps {
@@ -48,10 +49,17 @@ function getStatusBadge(status: string) {
     REJECTED: { label: 'Rejected', variant: 'destructive' as const },
   };
 
-  const config = statusConfig[status as keyof typeof statusConfig] || {
-    label: status,
-    variant: 'secondary' as const,
+  // Type guard to check if status is a valid key
+  const isValidStatus = (s: string): s is keyof typeof statusConfig => {
+    return s in statusConfig;
   };
+
+  const config = isValidStatus(status)
+    ? statusConfig[status]
+    : {
+        label: status,
+        variant: 'secondary' as const,
+      };
 
   return <Badge variant={config.variant}>{config.label}</Badge>;
 }

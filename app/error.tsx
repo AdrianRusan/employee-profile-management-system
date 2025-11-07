@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import * as Sentry from '@sentry/nextjs';
 
 export default function GlobalError({
   error,
@@ -14,7 +15,20 @@ export default function GlobalError({
 }) {
   const router = useRouter();
   useEffect(() => {
+    // Log error locally
     console.error('Global error:', error);
+
+    // Send error to Sentry for tracking
+    Sentry.captureException(error, {
+      tags: {
+        errorBoundary: 'global',
+      },
+      contexts: {
+        errorInfo: {
+          digest: error.digest,
+        },
+      },
+    });
   }, [error]);
 
   return (

@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 import { trpc } from '@/lib/trpc/Provider';
-import { useAuthStore } from '@/stores/authStore';
 import { Badge } from '@/components/ui/badge';
 import {
   Select,
@@ -20,11 +19,13 @@ const roleColors = {
 
 export function RoleIndicator() {
   const router = useRouter();
-  const { user, switchRole: updateStoreRole } = useAuthStore();
+  const utils = trpc.useUtils();
+  const { data: user } = trpc.auth.getCurrentUser.useQuery();
 
   const switchRoleMutation = trpc.auth.switchRole.useMutation({
-    onSuccess: (updatedUser) => {
-      updateStoreRole(updatedUser.role);
+    onSuccess: async () => {
+      // Invalidate and refetch user data to update tRPC query cache
+      await utils.auth.getCurrentUser.invalidate();
       router.refresh();
     },
   });

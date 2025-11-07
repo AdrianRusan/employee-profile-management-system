@@ -1,18 +1,17 @@
 'use client';
 
-import { useAuthStore } from '@/stores/authStore';
 import { trpc } from '@/lib/trpc/Provider';
 import { Sidebar } from '@/components/Sidebar';
 import { MobileNav } from '@/components/MobileNav';
 import { RoleIndicator } from '@/components/RoleIndicator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user } = useAuthStore();
   const {
     data: currentUser,
     isLoading,
@@ -71,7 +70,9 @@ export default function DashboardLayout({
         className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col"
         aria-label="Sidebar navigation"
       >
-        <Sidebar />
+        <ErrorBoundary level="component">
+          <Sidebar />
+        </ErrorBoundary>
       </aside>
 
       {/* Main Content */}
@@ -80,25 +81,31 @@ export default function DashboardLayout({
         <header className="sticky top-0 z-10 border-b bg-white shadow-sm">
           <div className="flex h-16 items-center justify-between px-4">
             <div className="flex items-center gap-4">
-              <MobileNav />
+              <ErrorBoundary level="component">
+                <MobileNav />
+              </ErrorBoundary>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">
                   Employee Profile System
                 </h2>
                 <p className="text-sm text-gray-600">
-                  Welcome, {currentUser?.name || user?.name || 'Guest'}
+                  Welcome, {currentUser?.name || 'Guest'}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <RoleIndicator />
+              <ErrorBoundary level="component">
+                <RoleIndicator />
+              </ErrorBoundary>
             </div>
           </div>
         </header>
 
         {/* Page Content */}
         <main className="flex-1 bg-gray-50 p-4 md:p-6 lg:p-8" role="main">
-          {children}
+          <ErrorBoundary level="page">
+            {children}
+          </ErrorBoundary>
         </main>
       </div>
     </div>

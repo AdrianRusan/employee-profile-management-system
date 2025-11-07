@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { Loader2, Sparkles, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { countWords } from '@/lib/utils';
 
 interface FeedbackFormProps {
   receiverId: string;
@@ -31,7 +32,7 @@ interface FeedbackFormProps {
 /**
  * FeedbackForm component for submitting feedback with optional AI polishing
  * Features:
- * - Character count (10-2000)
+ * - Character count (20-2000) and word count (minimum 5 words)
  * - AI polishing with side-by-side comparison
  * - Toggle between original and polished versions
  */
@@ -89,8 +90,13 @@ export function FeedbackForm({
   const handlePolish = () => {
     const content = form.getValues('content');
 
-    if (!content || content.length < 10) {
-      toast.error('Please write at least 10 characters before polishing');
+    if (!content || content.trim().length < 20) {
+      toast.error('Please write at least 20 characters before polishing');
+      return;
+    }
+
+    if (countWords(content.trim()) < 5) {
+      toast.error('Please write at least 5 words before polishing');
       return;
     }
 
@@ -114,8 +120,10 @@ export function FeedbackForm({
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const currentContent = form.watch('content');
-  const charCount = currentContent?.length || 0;
-  const isValidLength = charCount >= 10 && charCount <= 2000;
+  const charCount = currentContent?.trim().length || 0;
+  const wordCount = currentContent ? countWords(currentContent.trim()) : 0;
+  const isValidLength = charCount >= 20 && charCount <= 2000;
+  const isValidWordCount = wordCount >= 5;
 
   return (
     <Card>
@@ -140,19 +148,30 @@ export function FeedbackForm({
                   </FormControl>
                   <div className="flex items-center justify-between">
                     <FormDescription>
-                      Write constructive feedback (10-2000 characters)
+                      Write constructive feedback (minimum 20 characters, 5 words)
                     </FormDescription>
-                    <span
-                      className={`text-sm ${
-                        isValidLength
-                          ? 'text-muted-foreground'
-                          : charCount > 2000
-                          ? 'text-destructive'
-                          : 'text-muted-foreground'
-                      }`}
-                    >
-                      {charCount} / 2000
-                    </span>
+                    <div className="flex items-center gap-3 text-sm">
+                      <span
+                        className={`${
+                          isValidLength
+                            ? 'text-muted-foreground'
+                            : charCount > 2000
+                            ? 'text-destructive'
+                            : 'text-muted-foreground'
+                        }`}
+                      >
+                        {charCount} / 2000 chars
+                      </span>
+                      <span
+                        className={`${
+                          isValidWordCount
+                            ? 'text-muted-foreground'
+                            : 'text-muted-foreground'
+                        }`}
+                      >
+                        {wordCount} / 5 words
+                      </span>
+                    </div>
                   </div>
                   <FormMessage />
                 </FormItem>
@@ -165,7 +184,7 @@ export function FeedbackForm({
                 type="button"
                 variant="outline"
                 onClick={handlePolish}
-                disabled={!isValidLength || polishMutation.isPending}
+                disabled={!isValidLength || !isValidWordCount || polishMutation.isPending}
               >
                 {polishMutation.isPending ? (
                   <>
@@ -250,7 +269,7 @@ export function FeedbackForm({
               )}
               <Button
                 type="submit"
-                disabled={!isValidLength || createMutation.isPending}
+                disabled={!isValidLength || !isValidWordCount || createMutation.isPending}
               >
                 {createMutation.isPending ? (
                   <>

@@ -186,10 +186,19 @@ COWORKER    | ✓ (limited)   | ✓        | ✗        | ✗              | ✗
 
 ### Data Protection
 
+**Field-Level Encryption**
+- AES-256-GCM encryption for sensitive PII (SSN, etc.)
+- Authenticated encryption prevents tampering
+- Automatic encryption on write, decryption on read
+- Compliant with GDPR Article 32, CCPA, PCI DSS
+- Encryption key stored securely in environment variables
+- Key rotation procedure documented below
+
 **Sensitive Field Filtering**
 - Server-side filtering based on viewer role
 - Never expose sensitive data in API responses
 - Type-safe filtering with TypeScript
+- Encrypted fields only decrypted for authorized viewers
 
 **Input Validation**
 - Zod schemas on both client and server
@@ -200,6 +209,65 @@ COWORKER    | ✓ (limited)   | ✓        | ✗        | ✗              | ✗
 - React automatic escaping
 - Content Security Policy headers
 - Sanitization of user-generated content
+
+### Encryption Implementation
+
+**Algorithm**: AES-256-GCM (Galois/Counter Mode)
+- 256-bit key length (military-grade encryption)
+- Authenticated encryption (integrity + confidentiality)
+- Random IV (Initialization Vector) per encryption
+- Auth tag prevents data tampering
+
+**Encrypted Fields**:
+- `User.ssn` - Social Security Number
+
+**Encryption Flow**:
+```typescript
+// Write (Encryption)
+1. Manager updates SSN via updateSensitive mutation
+2. SSN validated and sanitized
+3. encrypt(ssn) → encrypted string (iv:authTag:ciphertext)
+4. Encrypted SSN stored in database
+
+// Read (Decryption)
+1. Manager requests user profile via getById/getAll
+2. Check permissions (canViewSensitive)
+3. If authorized: decrypt(encryptedSSN) → plaintext SSN
+4. Return decrypted SSN in response
+5. If unauthorized: SSN field filtered out
+```
+
+**Key Management**:
+- Encryption key: 32-byte (64 char) hexadecimal string
+- Stored in: `ENCRYPTION_KEY` environment variable
+- Generation: `openssl rand -hex 32`
+- Security: Never commit to git, rotate periodically
+- Access: Server-side only, never exposed to client
+
+**Key Rotation Procedure**:
+1. Generate new encryption key: `openssl rand -hex 32`
+2. Create backup of database
+3. Store new key as `ENCRYPTION_KEY_NEW` in .env
+4. Run key rotation script: `npm run rotate-encryption-key`
+   - Script decrypts with old key
+   - Re-encrypts with new key
+   - Updates all encrypted fields
+5. Replace `ENCRYPTION_KEY` with `ENCRYPTION_KEY_NEW`
+6. Remove `ENCRYPTION_KEY_NEW` from .env
+7. Update key in production secret manager
+8. Verify all encrypted fields decrypt correctly
+9. Securely delete old key
+
+**Migration**:
+- Use `scripts/encrypt-existing-ssns.ts` to encrypt existing plaintext SSNs
+- Dry-run mode by default for safety
+- Checks if data already encrypted before processing
+- Logs all operations for audit trail
+
+**Error Handling**:
+- Decryption errors logged but don't fail requests
+- Invalid encrypted data nulled out gracefully
+- Missing encryption key throws startup error
 
 ## Performance Optimizations
 

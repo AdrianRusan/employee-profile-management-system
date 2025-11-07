@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { FadeIn } from '@/components/FadeIn';
 import { Users, MessageSquare, CalendarDays } from 'lucide-react';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ErrorBoundaryTest } from '@/components/ErrorBoundaryTest';
 
 export default function DashboardPage() {
   const { data: currentUser, isLoading, isError, error } = trpc.auth.getCurrentUser.useQuery();
@@ -96,11 +98,21 @@ export default function DashboardPage() {
                 <li>✅ Profile management (Phase 3)</li>
                 <li>✅ Feedback system (Phase 4)</li>
                 <li>✅ Absence management (Phase 5)</li>
+                <li>✅ Error Boundaries (Phase 7)</li>
               </ul>
             </CardContent>
           </Card>
         </FadeIn>
       </div>
+
+      {/* Error Boundary Test Component - FOR TESTING ONLY */}
+      {process.env.NODE_ENV === 'development' && (
+        <FadeIn delay={0.4} direction="up">
+          <ErrorBoundary level="component">
+            <ErrorBoundaryTest />
+          </ErrorBoundary>
+        </FadeIn>
+      )}
     </div>
   );
 }

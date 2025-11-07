@@ -1,19 +1,31 @@
 import { getIronSession, IronSession, SessionOptions } from 'iron-session';
 import { cookies } from 'next/headers';
+import { sessionConfig } from './config';
 
 export interface SessionData {
   userId: string;
+  id: string; // Alias for userId for compatibility with SessionUser
+  email: string;
   role: 'EMPLOYEE' | 'MANAGER' | 'COWORKER';
 }
 
 const sessionOptions: SessionOptions = {
-  password: process.env.SESSION_SECRET || 'complex_password_at_least_32_characters_long',
-  cookieName: 'employee_profile_session',
+  password: (() => {
+    const secret = process.env.SESSION_SECRET;
+    if (!secret) {
+      throw new Error('SESSION_SECRET environment variable is required');
+    }
+    if (secret.length < 32) {
+      throw new Error('SESSION_SECRET must be at least 32 characters');
+    }
+    return secret;
+  })(),
+  cookieName: sessionConfig.cookieName,
   cookieOptions: {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7, // 1 week
+    secure: sessionConfig.secure,
+    sameSite: sessionConfig.sameSite,
+    maxAge: sessionConfig.maxAge,
   },
 };
 
@@ -21,9 +33,11 @@ export async function getSession(): Promise<IronSession<SessionData>> {
   return getIronSession<SessionData>(await cookies(), sessionOptions);
 }
 
-export async function createSession(userId: string, role: 'EMPLOYEE' | 'MANAGER' | 'COWORKER'): Promise<void> {
+export async function createSession(userId: string, email: string, role: 'EMPLOYEE' | 'MANAGER' | 'COWORKER'): Promise<void> {
   const session = await getSession();
   session.userId = userId;
+  session.id = userId; // Alias for compatibility
+  session.email = email;
   session.role = role;
   await session.save();
 }
@@ -35,11 +49,13 @@ export async function deleteSession(): Promise<void> {
 
 export async function getCurrentUser(): Promise<SessionData | null> {
   const session = await getSession();
-  if (!session.userId || !session.role) {
+  if (!session.userId || !session.role || !session.email) {
     return null;
   }
   return {
     userId: session.userId,
+    id: session.userId, // Alias for compatibility
+    email: session.email,
     role: session.role,
   };
 }

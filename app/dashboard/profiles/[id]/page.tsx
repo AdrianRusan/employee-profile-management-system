@@ -1,10 +1,9 @@
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { ProfilePageClient } from './ProfilePageClient';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/server/db';
 
 /**
  * Helper function to serialize user data for client components

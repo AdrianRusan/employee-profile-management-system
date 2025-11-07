@@ -66,7 +66,12 @@ export function AvatarUpload({
       // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPreview(reader.result as string);
+        // Validate that the result is a string (data URL)
+        if (typeof reader.result === 'string') {
+          setPreview(reader.result);
+        } else {
+          toast.error('Failed to read image file');
+        }
       };
       reader.readAsDataURL(file);
 

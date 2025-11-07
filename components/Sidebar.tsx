@@ -7,7 +7,6 @@ import { Users, MessageSquare, CalendarDays, Home, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc/Provider';
-import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
 
 const navigation = [
@@ -25,11 +24,12 @@ interface SidebarProps {
 export function Sidebar({ className, onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { logout: clearAuthState } = useAuthStore();
+  const utils = trpc.useUtils();
 
   const logoutMutation = trpc.auth.logout.useMutation({
-    onSuccess: () => {
-      clearAuthState();
+    onSuccess: async () => {
+      // Invalidate user query to clear tRPC cache
+      await utils.auth.getCurrentUser.invalidate();
       router.push('/login');
     },
     onError: (error) => {

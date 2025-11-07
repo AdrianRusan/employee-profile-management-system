@@ -17,14 +17,14 @@ import {
 } from '@/components/ui/select';
 import { Sparkles, ChevronDown, ChevronUp, MessageSquare, Send } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { useAuthStore } from '@/stores/authStore';
 import { Feedback, User } from '@prisma/client';
 
-type FeedbackWithUser = Omit<Feedback, 'createdAt' | 'updatedAt'> & {
+type FeedbackWithUser = Omit<Feedback, 'createdAt' | 'updatedAt' | 'deletedAt'> & {
   giver?: Partial<User> | null;
   receiver?: Partial<User> | null;
   createdAt: string | Date;
   updatedAt: string | Date;
+  deletedAt: string | Date | null;
 };
 
 /**
@@ -33,15 +33,22 @@ type FeedbackWithUser = Omit<Feedback, 'createdAt' | 'updatedAt'> & {
  * Features filtering, sorting, and detailed feedback view
  */
 export default function FeedbackPage() {
-  const { user: currentUser } = useAuthStore();
+  const { data: currentUser } = trpc.auth.getCurrentUser.useQuery();
   const [expandedFeedback, setExpandedFeedback] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'recent' | 'oldest'>('recent');
 
+  // Feedback updates semi-frequently - use 2 minute staleTime
   const { data: receivedFeedback, isLoading: isLoadingReceived } =
-    trpc.feedback.getReceived.useQuery();
+    trpc.feedback.getReceived.useQuery(undefined, {
+      staleTime: 2 * 60 * 1000, // 2 minutes - feedback updates moderately often
+      gcTime: 10 * 60 * 1000, // 10 minutes
+    });
 
   const { data: givenFeedback, isLoading: isLoadingGiven } =
-    trpc.feedback.getGiven.useQuery();
+    trpc.feedback.getGiven.useQuery(undefined, {
+      staleTime: 2 * 60 * 1000, // 2 minutes - feedback updates moderately often
+      gcTime: 10 * 60 * 1000, // 10 minutes
+    });
 
   const { data: stats } = trpc.feedback.getStats.useQuery({
     userId: currentUser?.id || '',
@@ -263,7 +270,11 @@ export default function FeedbackPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium">Sort by:</label>
-          <Select value={sortBy} onValueChange={(value: string) => setSortBy(value as 'recent' | 'oldest')}>
+          <Select value={sortBy} onValueChange={(value: string) => {
+            if (value === 'recent' || value === 'oldest') {
+              setSortBy(value);
+            }
+          }}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
