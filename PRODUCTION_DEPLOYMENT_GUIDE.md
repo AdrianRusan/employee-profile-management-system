@@ -337,7 +337,7 @@ unset DATABASE_URL
 export DATABASE_URL="<your-production-database-url>"
 
 # Seed the database
-npm run prisma db:seed
+npx prisma db seed
 
 # Unset when done
 unset DATABASE_URL

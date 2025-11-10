@@ -63,7 +63,8 @@
       "Bash(then mkdir -p \"C:\\Users\\Adrian Rusan\\Work_Windows\\Personal\\Myself\\employee-profile-management-system\\components\\dashboard\")",
       "Bash(npm run validate:*)",
       "Bash(powershell -Command:*)",
-      "Bash(npm update:*)"
+      "Bash(npm update:*)",
+      "Bash(npx prisma db push:*)"
     ],
     "deny": [],
     "ask": []
