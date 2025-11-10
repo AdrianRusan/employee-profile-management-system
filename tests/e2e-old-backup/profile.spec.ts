@@ -3,7 +3,7 @@ import { loginAsEmployee, loginAsManager, loginAsCoworker } from './helpers/auth
 import { navigateToProfile } from './helpers/navigation';
 
 test.describe('Profile Management', () => {
-  test('Employee should view own complete profile', async ({ page }) => {
+  test('Employee should view own complete profile @smoke', async ({ page }) => {
     await loginAsEmployee(page);
 
     // Navigate to profiles
@@ -29,7 +29,7 @@ test.describe('Profile Management', () => {
     await expect(page.locator('button:has-text("Edit Profile")')).toBeVisible();
   });
 
-  test('Manager should view all profile fields', async ({ page }) => {
+  test('Manager should view all profile fields @smoke', async ({ page }) => {
     await loginAsManager(page);
 
     // Navigate to profiles and find employee
@@ -46,7 +46,7 @@ test.describe('Profile Management', () => {
     await expect(page.locator('button:has-text("Edit Profile")')).toBeVisible();
   });
 
-  test('Coworker should see limited profile fields', async ({ page }) => {
+  test('Coworker should see limited profile fields @core', async ({ page }) => {
     await loginAsCoworker(page);
 
     // Navigate to profiles and find employee
@@ -67,7 +67,7 @@ test.describe('Profile Management', () => {
     await expect(page.locator('button:has-text("Edit Profile")')).not.toBeVisible();
   });
 
-  test('Employee should edit own profile', async ({ page }) => {
+  test('Employee should edit own profile @core', async ({ page }) => {
     await loginAsEmployee(page);
 
     // Go to own profile
@@ -93,7 +93,7 @@ test.describe('Profile Management', () => {
     await expect(page.locator(`text=${newBio}`)).toBeVisible({ timeout: 5000 });
   });
 
-  test('Manager should edit employee profile', async ({ page }) => {
+  test('Manager should edit employee profile @core', async ({ page }) => {
     await loginAsManager(page);
 
     // Navigate to employee profile
@@ -115,7 +115,7 @@ test.describe('Profile Management', () => {
     await expect(page.locator('text=Lead Software Engineer')).toBeVisible({ timeout: 5000 });
   });
 
-  test('Coworker cannot edit other profiles', async ({ page }) => {
+  test('Coworker cannot edit other profiles @core', async ({ page }) => {
     await loginAsCoworker(page);
 
     // Navigate to employee profile
@@ -126,7 +126,7 @@ test.describe('Profile Management', () => {
     await expect(page.locator('button:has-text("Edit Profile")')).not.toBeVisible();
   });
 
-  test('Profile list should show all users', async ({ page }) => {
+  test('Profile list should show all users @smoke', async ({ page }) => {
     await loginAsEmployee(page);
 
     await page.goto('/dashboard/profiles');
@@ -175,7 +175,7 @@ test.describe('Profile Management', () => {
     }
   });
 
-  test('Profile should show role badge', async ({ page }) => {
+  test('Profile should show role badge @core', async ({ page }) => {
     await loginAsEmployee(page);
 
     await page.goto('/dashboard/profiles');

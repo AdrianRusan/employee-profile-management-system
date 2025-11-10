@@ -64,7 +64,11 @@
       "Bash(npm run validate:*)",
       "Bash(powershell -Command:*)",
       "Bash(npm update:*)",
-      "Bash(npx prisma db push:*)"
+      "Bash(npx prisma db push:*)",
+      "Bash(for file in tests/e2e/*.spec.ts)",
+      "Bash(done)",
+      "mcp__filesystem__list_directory",
+      "mcp__filesystem__read_multiple_files"
     ],
     "deny": [],
     "ask": []

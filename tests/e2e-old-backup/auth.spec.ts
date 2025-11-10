@@ -7,7 +7,7 @@ test.describe('Authentication', () => {
     await page.goto('/');
   });
 
-  test('should redirect unauthenticated users to login page', async ({ page }) => {
+  test('should redirect unauthenticated users to login page @smoke', async ({ page }) => {
     // Try to access protected route
     await page.goto('/dashboard');
 
@@ -15,7 +15,7 @@ test.describe('Authentication', () => {
     await expect(page).toHaveURL(/\/login/);
   });
 
-  test('should login with valid credentials', async ({ page }) => {
+  test('should login with valid credentials @smoke', async ({ page }) => {
     await page.goto('/login');
 
     // Fill in login form (email-only authentication)
@@ -31,7 +31,7 @@ test.describe('Authentication', () => {
     await expect(page.locator('text=David Developer')).toBeVisible();
   });
 
-  test('should show error with invalid email format', async ({ page }) => {
+  test('should show error with invalid email format @core', async ({ page }) => {
     await page.goto('/login');
 
     // Fill in login form with invalid email
@@ -47,7 +47,7 @@ test.describe('Authentication', () => {
     await expect(page.locator('text=/invalid|email/i')).toBeVisible();
   });
 
-  test('should show error with non-existent user', async ({ page }) => {
+  test('should show error with non-existent user @core', async ({ page }) => {
     await page.goto('/login');
 
     // Fill in login form with non-existent email
@@ -63,7 +63,7 @@ test.describe('Authentication', () => {
     await expect(page.locator('text=/not found|invalid|does not exist/i')).toBeVisible();
   });
 
-  test('should logout successfully', async ({ page }) => {
+  test('should logout successfully @smoke', async ({ page }) => {
     // Login first
     await loginAsEmployee(page);
 
@@ -81,7 +81,7 @@ test.describe('Authentication', () => {
     await expect(page).toHaveURL(/\/login/);
   });
 
-  test('should persist session after page reload', async ({ page }) => {
+  test('should persist session after page reload @smoke', async ({ page }) => {
     // Login
     await loginAsEmployee(page);
 
@@ -96,7 +96,7 @@ test.describe('Authentication', () => {
     await expect(page.locator('text=David Developer')).toBeVisible();
   });
 
-  test('should redirect from login page when already authenticated', async ({ page }) => {
+  test('should redirect from login page when already authenticated @core', async ({ page }) => {
     // Login first
     await loginAsEmployee(page);
 
@@ -131,7 +131,7 @@ test.describe('Authentication', () => {
     await expect(page).toHaveURL('/dashboard');
   });
 
-  test('should preserve return URL after login', async ({ page }) => {
+  test('should preserve return URL after login @core', async ({ page }) => {
     // Try to access a specific profile while not authenticated
     const targetUrl = '/dashboard/profiles/some-id';
     await page.goto(targetUrl);

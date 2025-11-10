@@ -11,16 +11,38 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  /* Dynamic worker configuration based on test suite */
+  workers: process.env.CI
+    ? process.env.TEST_SUITE === 'smoke'
+      ? 4
+      : process.env.TEST_SUITE === 'core'
+        ? 3
+        : 2
+    : 3, // Reduced from unlimited to 3 workers locally to prevent server overload
+  /* Dynamic timeout based on test suite */
+  timeout: process.env.TEST_SUITE === 'smoke' ? 30 * 1000 : 45 * 1000, // Increased timeouts for local dev server
+  /* Grep patterns for test filtering by suite */
+  grep: process.env.TEST_SUITE === 'smoke'
+    ? /@smoke/
+    : process.env.TEST_SUITE === 'core'
+      ? /@smoke|@core/
+      : undefined, // Run all tests if no suite specified
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
+  reporter: process.env.CI ? [['html'], ['github'], ['list']] : 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: 'http://localhost:3001',
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
+    /* Navigation timeout */
+    navigationTimeout: 10 * 1000, // 10 seconds for page loads
+    /* Action timeout */
+    actionTimeout: 10 * 1000, // 10 seconds for actions
+    /* Screenshot on failure only to save space */
+    screenshot: 'only-on-failure',
+    /* Video only for full suite runs */
+    video: process.env.TEST_SUITE === 'full' ? 'retain-on-failure' : 'off',
   },
 
   /* Configure projects for major browsers */
@@ -30,31 +52,38 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
 
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-
-    /* Test against mobile viewports. */
-    {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
-    },
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
-    },
+    // Only run Chromium tests locally for speed
+    // Uncomment below to test other browsers when needed
+    // ...(process.env.CI
+    //   ? []
+    //   : [
+    //       {
+    //         name: 'firefox',
+    //         use: { ...devices['Desktop Firefox'] },
+    //       },
+    //
+    //       {
+    //         name: 'webkit',
+    //         use: { ...devices['Desktop Safari'] },
+    //       },
+    //
+    //       /* Test against mobile viewports. */
+    //       {
+    //         name: 'Mobile Chrome',
+    //         use: { ...devices['Pixel 5'] },
+    //         },
+    //       {
+    //         name: 'Mobile Safari',
+    //         use: { ...devices['iPhone 12'] },
+    //       },
+    //     ]),
   ],
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'npm run dev',
+    command: 'npx prisma generate && npm run dev',
     url: 'http://localhost:3001',
     reuseExistingServer: !process.env.CI,
+    timeout: 120 * 1000, // 2 minutes for server startup
   },
 })

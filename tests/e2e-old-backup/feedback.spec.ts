@@ -3,7 +3,7 @@ import { loginAsEmployee, loginAsManager, loginAsCoworker } from './helpers/auth
 import { navigateToProfile } from './helpers/navigation';
 
 test.describe('Feedback System', () => {
-  test('Employee should submit feedback to coworker', async ({ page }) => {
+  test('Employee should submit feedback to coworker @smoke', async ({ page }) => {
     await loginAsEmployee(page);
 
     // Navigate to coworker profile
@@ -28,7 +28,7 @@ test.describe('Feedback System', () => {
     await expect(page.locator(`text=${feedbackContent}`)).toBeVisible();
   });
 
-  test('Feedback validation - minimum length', async ({ page }) => {
+  test('Feedback validation - minimum length @smoke', async ({ page }) => {
     await loginAsEmployee(page);
 
     // Navigate to coworker profile feedback tab
@@ -46,7 +46,7 @@ test.describe('Feedback System', () => {
     await expect(page.locator('text=/at least 10 characters/i')).toBeVisible();
   });
 
-  test('Feedback validation - maximum length', async ({ page }) => {
+  test('Feedback validation - maximum length @core', async ({ page }) => {
     await loginAsEmployee(page);
 
     // Navigate to coworker profile feedback tab
@@ -101,7 +101,7 @@ test.describe('Feedback System', () => {
     }
   });
 
-  test('Cannot submit feedback to self', async ({ page }) => {
+  test('Cannot submit feedback to self @core', async ({ page }) => {
     await loginAsEmployee(page);
 
     // Navigate to own profile
@@ -117,7 +117,7 @@ test.describe('Feedback System', () => {
     await expect(page.locator('button:has-text("Submit Feedback")')).not.toBeVisible();
   });
 
-  test('Employee should view own received feedback', async ({ page }) => {
+  test('Employee should view own received feedback @core', async ({ page }) => {
     await loginAsEmployee(page);
 
     // First, have manager give feedback to employee
@@ -138,7 +138,7 @@ test.describe('Feedback System', () => {
     // If there's feedback, it should be visible
   });
 
-  test('Manager should view any employee feedback', async ({ page }) => {
+  test('Manager should view any employee feedback @core', async ({ page }) => {
     await loginAsManager(page);
 
     // Navigate to employee profile
@@ -172,7 +172,7 @@ test.describe('Feedback System', () => {
     await expect(page.getByPlaceholder('Share your thoughts, observations, or suggestions...')).not.toBeVisible();
   });
 
-  test('Feedback shows giver name and timestamp', async ({ page }) => {
+  test('Feedback shows giver name and timestamp @core', async ({ page }) => {
     await loginAsEmployee(page);
 
     // Navigate to coworker profile and submit feedback

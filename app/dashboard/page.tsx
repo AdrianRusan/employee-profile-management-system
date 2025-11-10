@@ -4,8 +4,6 @@ import { trpc } from '@/lib/trpc/Provider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FadeIn } from '@/components/FadeIn';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { ErrorBoundaryTest } from '@/components/ErrorBoundaryTest';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed';
 import { MetricsCard } from '@/components/dashboard/MetricsCard';
@@ -117,15 +115,6 @@ export default function DashboardPage() {
       <FadeIn delay={0.7} direction="up">
         <ActivityFeed limit={10} />
       </FadeIn>
-
-      {/* Error Boundary Test Component - FOR TESTING ONLY */}
-      {process.env.NODE_ENV === 'development' && (
-        <FadeIn delay={0.8} direction="up">
-          <ErrorBoundary level="component">
-            <ErrorBoundaryTest />
-          </ErrorBoundary>
-        </FadeIn>
-      )}
     </div>
   );
 }

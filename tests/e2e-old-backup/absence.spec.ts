@@ -4,7 +4,7 @@ import { fillAbsenceRequest } from './helpers/absence';
 import { navigateToProfile } from './helpers/navigation';
 
 test.describe('Absence Management', () => {
-  test('Employee should request time off', async ({ page }) => {
+  test('Employee should request time off @smoke', async ({ page }) => {
     await loginAsEmployee(page);
 
     // Navigate to own profile
@@ -29,7 +29,7 @@ test.describe('Absence Management', () => {
     await expect(page.locator('text=/pending/i')).toBeVisible();
   });
 
-  test('Absence validation - end date must be after start date', async ({ page }) => {
+  test('Absence validation - end date must be after start date @core', async ({ page }) => {
     await loginAsEmployee(page);
 
     await page.goto('/dashboard/profiles');
@@ -48,7 +48,7 @@ test.describe('Absence Management', () => {
     await expect(page.locator('text=/end date.*after.*start date/i')).toBeVisible();
   });
 
-  test('Absence validation - reason minimum length', async ({ page }) => {
+  test('Absence validation - reason minimum length @core', async ({ page }) => {
     await loginAsEmployee(page);
 
     await page.goto('/dashboard/profiles');
@@ -130,7 +130,7 @@ test.describe('Absence Management', () => {
     // In practice, selecting dates more than 1 year apart should trigger validation
   });
 
-  test('Employee should view own absence requests', async ({ page }) => {
+  test('Employee should view own absence requests @core', async ({ page }) => {
     await loginAsEmployee(page);
 
     await page.goto('/dashboard/profiles');
@@ -146,7 +146,7 @@ test.describe('Absence Management', () => {
     expect(hasCalendar || hasRequestButton).toBeTruthy();
   });
 
-  test('Manager should view employee absence requests', async ({ page }) => {
+  test('Manager should view employee absence requests @core', async ({ page }) => {
     await loginAsManager(page);
 
     // Navigate to employee profile
@@ -159,7 +159,7 @@ test.describe('Absence Management', () => {
     await expect(page.locator('text=/absence|time off/i')).toBeVisible();
   });
 
-  test('Manager should approve absence request', async ({ page }) => {
+  test('Manager should approve absence request @smoke', async ({ page }) => {
     await loginAsManager(page);
 
     // Go to absence dashboard or employee profile
@@ -182,7 +182,7 @@ test.describe('Absence Management', () => {
     }
   });
 
-  test('Manager should reject absence request', async ({ page }) => {
+  test('Manager should reject absence request @core', async ({ page }) => {
     await loginAsManager(page);
 
     await page.goto('/dashboard/profiles');
@@ -270,7 +270,7 @@ test.describe('Absence Management', () => {
     }
   });
 
-  test('Can cancel pending absence request', async ({ page }) => {
+  test('Can cancel pending absence request @core', async ({ page }) => {
     await loginAsEmployee(page);
 
     await page.goto('/dashboard/profiles');

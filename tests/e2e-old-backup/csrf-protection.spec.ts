@@ -28,7 +28,7 @@ test.describe('CSRF Protection', () => {
     await page.waitForURL('/dashboard');
   });
 
-  test('should generate CSRF token on page load', async ({ page }) => {
+  test('should generate CSRF token on page load @smoke', async ({ page }) => {
     // Check if CSRF token cookie is set
     const cookies = await page.context().cookies();
     const csrfTokenCookie = cookies.find(c => c.name === '__Host-csrf-token');
@@ -44,7 +44,7 @@ test.describe('CSRF Protection', () => {
     expect(csrfSecretCookie?.sameSite).toBe('Strict');
   });
 
-  test('should fetch CSRF token from API endpoint', async ({ page }) => {
+  test('should fetch CSRF token from API endpoint @core', async ({ page }) => {
     const response = await page.request.get('/api/csrf');
     expect(response.ok()).toBeTruthy();
 
@@ -57,7 +57,7 @@ test.describe('CSRF Protection', () => {
     expect(csrfTokenCookie?.value).toBe(data.csrfToken);
   });
 
-  test('should include CSRF token in tRPC mutation requests', async ({ page }) => {
+  test('should include CSRF token in tRPC mutation requests @core', async ({ page }) => {
     // Navigate to feedback page
     await page.goto('/feedback');
 
@@ -85,7 +85,7 @@ test.describe('CSRF Protection', () => {
     expect(csrfTokenIncluded).toBe(true);
   });
 
-  test('should reject mutations without CSRF token', async ({ page, context }) => {
+  test('should reject mutations without CSRF token @core', async ({ page, context }) => {
     // Get authentication cookies but clear CSRF cookies
     const authCookies = (await context.cookies()).filter(
       c => !c.name.includes('csrf')

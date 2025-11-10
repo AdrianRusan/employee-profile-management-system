@@ -1,66 +1,57 @@
 import { Page } from '@playwright/test';
 
 /**
- * Helper function to login as a specific user
- * Uses email-only authentication (demo mode)
- * @param page Playwright page instance
- * @param email User email
+ * Login helper - uses email-only authentication
  */
-export async function login(page: Page, email: string) {
-  await page.goto('/login');
-  await page.waitForLoadState('networkidle');
+export async function login(page: Page, email: string, role?: 'MANAGER' | 'EMPLOYEE' | 'COWORKER') {
+  await page.goto('/login', { waitUntil: 'domcontentloaded', timeout: 15000 });
 
-  // Wait for form to be visible
-  await page.locator('input[name="email"]').waitFor({ state: 'visible', timeout: 5000 });
+  // Fill email
+  await page.fill('input[type="email"]', email);
 
-  await page.fill('input[name="email"]', email);
+  // Select role if specified (otherwise uses profile default)
+  if (role) {
+    await page.selectOption('select', role);
+  }
+
+  // Click sign in
   await page.click('button[type="submit"]');
 
-  // Wait for redirect to dashboard with extended timeout for WebKit
+  // Wait for redirect to dashboard
   await page.waitForURL('/dashboard', { timeout: 15000 });
-  await page.waitForLoadState('networkidle');
 }
 
 /**
- * Helper function to login as a manager
- * Uses the seeded manager account: Emily Manager
+ * Login as manager
  */
 export async function loginAsManager(page: Page) {
-  await login(page, 'emily@example.com');
+  await login(page, 'emily@example.com', 'MANAGER');
 }
 
 /**
- * Helper function to login as an employee
- * Uses the seeded employee account: David Developer
+ * Login as employee
  */
 export async function loginAsEmployee(page: Page) {
-  await login(page, 'david@example.com');
+  await login(page, 'david@example.com', 'EMPLOYEE');
 }
 
 /**
- * Helper function to login as a coworker
- * Uses the seeded coworker account: Sarah Designer
+ * Login as coworker
  */
 export async function loginAsCoworker(page: Page) {
-  await login(page, 'sarah@example.com');
+  await login(page, 'sarah@example.com', 'COWORKER');
 }
 
 /**
- * Helper function to logout
+ * Logout helper
  */
 export async function logout(page: Page) {
-  // Click logout button (adjust selector based on your UI)
-  await page.click('button[aria-label="Logout"], button:has-text("Logout")');
+  // Click logout button in sidebar
+  const logoutButton = page.locator('button:has-text("Logout")');
+  await logoutButton.waitFor({ state: 'visible' });
+  await logoutButton.click();
 
-  // Wait for redirect to login
-  await page.waitForURL('/login', { timeout: 5000 });
-}
-
-/**
- * Helper function to check if user is authenticated
- */
-export async function isAuthenticated(page: Page): Promise<boolean> {
-  // Check if we're on a protected route (dashboard)
-  const url = page.url();
-  return url.includes('/dashboard');
+  // Wait for redirect to login with extended timeout and networkidle
+  await page.waitForURL('/login', { timeout: 20000 });
+  await page.waitForLoadState('networkidle');
 }

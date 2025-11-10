@@ -27,10 +27,10 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
   const utils = trpc.useUtils();
 
   const logoutMutation = trpc.auth.logout.useMutation({
-    onSuccess: async () => {
-      // Invalidate user query to clear tRPC cache
-      await utils.auth.getCurrentUser.invalidate();
-      router.push('/login');
+    onSuccess: () => {
+      // Use window.location for logout to ensure hard navigation
+      // Do NOT await invalidate - just redirect immediately
+      window.location.href = '/login';
     },
     onError: (error) => {
       console.error('Logout failed:', error);
@@ -38,8 +38,13 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
     },
   });
 
-  const handleLogout = () => {
-    logoutMutation.mutate();
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync();
+    } catch (error) {
+      // Error is handled by onError callback
+      console.error('Logout error:', error);
+    }
   };
 
   return (
