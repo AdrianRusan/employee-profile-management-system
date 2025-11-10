@@ -15,7 +15,7 @@ jobs:
         uses: lewagon/wait-on-check-action@v1.3.1
         with:
           ref: ${{ github.ref }}
-          check-name: 'lint'
+          check-name: 'Lint'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
 
@@ -23,7 +23,7 @@ jobs:
         uses: lewagon/wait-on-check-action@v1.3.1
         with:
           ref: ${{ github.ref }}
-          check-name: 'type-check'
+          check-name: 'Type Check'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
 
@@ -31,7 +31,7 @@ jobs:
         uses: lewagon/wait-on-check-action@v1.3.1
         with:
           ref: ${{ github.ref }}
-          check-name: 'test'
+          check-name: 'Test'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
 
@@ -39,7 +39,7 @@ jobs:
         uses: lewagon/wait-on-check-action@v1.3.1
         with:
           ref: ${{ github.ref }}
-          check-name: 'build'
+          check-name: 'Build'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
 
