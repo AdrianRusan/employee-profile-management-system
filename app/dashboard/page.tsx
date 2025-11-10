@@ -1,14 +1,17 @@
 'use client';
 
-import Link from 'next/link';
 import { trpc } from '@/lib/trpc/Provider';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FadeIn } from '@/components/FadeIn';
-import { Users, MessageSquare, CalendarDays } from 'lucide-react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ErrorBoundaryTest } from '@/components/ErrorBoundaryTest';
+import { QuickActions } from '@/components/dashboard/QuickActions';
+import { ActivityFeed } from '@/components/dashboard/ActivityFeed';
+import { MetricsCard } from '@/components/dashboard/MetricsCard';
+import { FeedbackChart } from '@/components/dashboard/FeedbackChart';
+import { AbsenceChart } from '@/components/dashboard/AbsenceChart';
+import { UpcomingAbsences } from '@/components/dashboard/UpcomingAbsences';
 
 export default function DashboardPage() {
   const { data: currentUser, isLoading, isError, error } = trpc.auth.getCurrentUser.useQuery();
@@ -19,12 +22,13 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
           <p className="mt-2 text-sm text-gray-600">
-            Overview of your profile and quick access to key features
+            Welcome back! Here&apos;s an overview of your activity and quick access to key features
           </p>
         </div>
       </FadeIn>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {/* Top Section: Profile Info and Quick Actions */}
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
         <FadeIn delay={0.1} direction="up">
           <Card>
             <CardHeader>
@@ -54,60 +58,69 @@ export default function DashboardPage() {
         </FadeIn>
 
         <FadeIn delay={0.2} direction="up">
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Navigate to key features</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link href="/dashboard/profiles">
-                    <Users className="mr-2 h-4 w-4" />
-                    View Profiles
-                  </Link>
-                </Button>
-                <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link href="/dashboard/feedback">
-                    <MessageSquare className="mr-2 h-4 w-4" />
-                    Feedback
-                  </Link>
-                </Button>
-                <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link href="/dashboard/absences">
-                    <CalendarDays className="mr-2 h-4 w-4" />
-                    Absences
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </FadeIn>
-
-        <FadeIn delay={0.3} direction="up">
-          <Card>
-            <CardHeader>
-              <CardTitle>System Status</CardTitle>
-              <CardDescription>Phase 6 - UI/UX Polish in Progress</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-1 text-sm text-gray-600">
-                <li>✅ Authentication & Authorization</li>
-                <li>✅ Role-based access control</li>
-                <li>✅ Session management</li>
-                <li>✅ Profile management (Phase 3)</li>
-                <li>✅ Feedback system (Phase 4)</li>
-                <li>✅ Absence management (Phase 5)</li>
-                <li>✅ Error Boundaries (Phase 7)</li>
-              </ul>
-            </CardContent>
-          </Card>
+          {isLoading ? (
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-4 w-48" />
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-3">
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                </div>
+              </CardContent>
+            </Card>
+          ) : isError ? (
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-sm text-red-600">
+                  Failed to load quick actions
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <QuickActions
+              user={{
+                id: currentUser!.id,
+                email: currentUser!.email,
+                role: currentUser!.role,
+              }}
+            />
+          )}
         </FadeIn>
       </div>
 
+      {/* Key Metrics Section */}
+      <FadeIn delay={0.3} direction="up">
+        <MetricsCard />
+      </FadeIn>
+
+      {/* Data Visualization Section */}
+      <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <FadeIn delay={0.4} direction="up">
+          <FeedbackChart />
+        </FadeIn>
+
+        <FadeIn delay={0.5} direction="up">
+          <AbsenceChart />
+        </FadeIn>
+
+        <FadeIn delay={0.6} direction="up">
+          <UpcomingAbsences />
+        </FadeIn>
+      </div>
+
+      {/* Recent Activity Section */}
+      <FadeIn delay={0.7} direction="up">
+        <ActivityFeed limit={10} />
+      </FadeIn>
+
       {/* Error Boundary Test Component - FOR TESTING ONLY */}
       {process.env.NODE_ENV === 'development' && (
-        <FadeIn delay={0.4} direction="up">
+        <FadeIn delay={0.8} direction="up">
           <ErrorBoundary level="component">
             <ErrorBoundaryTest />
           </ErrorBoundary>

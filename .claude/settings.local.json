@@ -58,7 +58,12 @@
       "Bash(npx tsx:*)",
       "Bash(timeout 10 bash:*)",
       "Bash(npx prisma validate:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(if [ ! -d \"C:\\Users\\Adrian Rusan\\Work_Windows\\Personal\\Myself\\employee-profile-management-system\\components\\dashboard\" ])",
+      "Bash(then mkdir -p \"C:\\Users\\Adrian Rusan\\Work_Windows\\Personal\\Myself\\employee-profile-management-system\\components\\dashboard\")",
+      "Bash(npm run validate:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(npm update:*)"
     ],
     "deny": [],
     "ask": []

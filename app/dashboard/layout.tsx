@@ -65,6 +65,14 @@ export default function DashboardLayout({
 
   return (
     <div className="flex min-h-screen">
+      {/* Skip to content link for accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-md focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      >
+        Skip to main content
+      </a>
+
       {/* Desktop Sidebar */}
       <aside
         className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col"
@@ -102,7 +110,7 @@ export default function DashboardLayout({
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 bg-gray-50 p-4 md:p-6 lg:p-8" role="main">
+        <main id="main-content" className="flex-1 bg-gray-50 p-4 md:p-6 lg:p-8" role="main">
           <ErrorBoundary level="page">
             {children}
           </ErrorBoundary>
