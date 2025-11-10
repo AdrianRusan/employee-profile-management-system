@@ -21,7 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { Trash2, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { useAuthStore } from '@/stores/authStore';
+import { Permissions } from '@/lib/permissions';
 
 interface FeedbackListProps {
   userId: string;
@@ -37,13 +37,18 @@ interface FeedbackListProps {
  * - Empty state
  */
 export function FeedbackList({ userId }: FeedbackListProps) {
-  const { user: currentUser } = useAuthStore();
+  const { data: currentUser } = trpc.auth.getCurrentUser.useQuery();
   const utils = trpc.useUtils();
   const [expandedFeedback, setExpandedFeedback] = useState<string | null>(null);
 
-  const { data: feedback, isLoading } = trpc.feedback.getForUser.useQuery({
-    userId,
-  });
+  // Feedback updates semi-frequently - use 2 minute staleTime
+  const { data: feedback, isLoading } = trpc.feedback.getForUser.useQuery(
+    { userId },
+    {
+      staleTime: 2 * 60 * 1000, // 2 minutes - feedback updates moderately often
+      gcTime: 10 * 60 * 1000, // 10 minutes
+    }
+  );
 
   const deleteMutation = trpc.feedback.delete.useMutation({
     onSuccess: () => {
@@ -114,25 +119,31 @@ export function FeedbackList({ userId }: FeedbackListProps) {
     <div className="space-y-4">
       {feedback.map((item) => {
         const isExpanded = expandedFeedback === item.id;
-        const canDelete =
-          currentUser?.role === 'MANAGER' || currentUser?.id === item.giverId;
+        // Use centralized permissions to check if user can delete this feedback
+        const canDelete = currentUser ? Permissions.feedback.delete(currentUser, item) : false;
         const displayContent =
           isExpanded && item.isPolished && item.polishedContent
             ? item.polishedContent
             : item.content;
 
+        // Type assertion: tRPC infers the type, but TypeScript needs explicit typing for includes
+        const feedbackItem = item as typeof item & {
+          giver: { id: string; name: string; email: string; avatar: string | null; role: string };
+          receiver?: { id: string; name: string; email: string; avatar: string | null; role: string };
+        };
+
         return (
-          <Card key={item.id}>
+          <Card key={feedbackItem.id}>
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <Avatar>
-                    <AvatarImage src={item.giver.avatar || undefined} />
-                    <AvatarFallback>{getInitials(item.giver.name)}</AvatarFallback>
+                    <AvatarImage src={feedbackItem.giver.avatar || undefined} />
+                    <AvatarFallback>{getInitials(feedbackItem.giver.name)}</AvatarFallback>
                   </Avatar>
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="font-semibold">{item.giver.name}</p>
+                      <p className="font-semibold">{feedbackItem.giver.name}</p>
                       {item.isPolished && (
                         <Badge variant="secondary" className="text-xs">
                           <Sparkles className="mr-1 h-3 w-3" />

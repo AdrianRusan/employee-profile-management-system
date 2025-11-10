@@ -4,6 +4,8 @@
  * via OpenAI-compatible chat completions endpoint
  */
 
+import { logger } from '@/lib/logger';
+
 interface ChatCompletionResponse {
   choices?: Array<{
     message?: {
@@ -36,7 +38,7 @@ export async function polishFeedback(
 
   // Return original content if API key is not configured
   if (!apiKey) {
-    console.warn('HuggingFace API key not configured. Returning original content.');
+    logger.warn('HuggingFace API key not configured. Returning original content.');
     return content;
   }
 
@@ -93,27 +95,27 @@ export async function polishFeedback(
       throw new Error('No generated text in response');
     } catch (error) {
       lastError = error as Error;
-      console.error(
-        `HuggingFace API attempt ${attempt + 1}/${maxRetries} failed:`,
-        error
+      logger.error(
+        { error, attempt: attempt + 1, maxRetries },
+        `HuggingFace API attempt ${attempt + 1}/${maxRetries} failed`
       );
 
       // Don't retry on the last attempt
       if (attempt < maxRetries - 1) {
         // Exponential backoff: 1s, 2s, 4s, etc.
         const backoffMs = Math.pow(2, attempt) * 1000;
-        console.log(`Retrying in ${backoffMs}ms...`);
+        logger.info({ backoffMs }, `Retrying in ${backoffMs}ms...`);
         await delay(backoffMs);
       }
     }
   }
 
   // All retries exhausted - log error and return original content
-  console.error(
-    'HuggingFace AI polishing failed after all retries:',
-    lastError?.message
+  logger.error(
+    { error: lastError?.message },
+    'HuggingFace AI polishing failed after all retries'
   );
-  console.warn('Returning original content as fallback.');
+  logger.warn('Returning original content as fallback');
 
   return content;
 }

@@ -6,7 +6,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { trpc } from '@/lib/trpc/Provider';
-import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { isValidRole } from '@/lib/type-guards';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -30,7 +30,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const from = searchParams.get('from') || '/dashboard';
-  const setUser = useAuthStore((state) => state.setUser);
+  const utils = trpc.useUtils();
 
   const [selectedRole, setSelectedRole] = useState<'EMPLOYEE' | 'MANAGER' | 'COWORKER' | undefined>();
 
@@ -44,8 +44,9 @@ function LoginForm() {
   });
 
   const loginMutation = trpc.auth.login.useMutation({
-    onSuccess: (user) => {
-      setUser(user);
+    onSuccess: async () => {
+      // Invalidate and refetch user data to update tRPC query cache
+      await utils.auth.getCurrentUser.invalidate();
       router.push(from);
     },
     onError: (error) => {
@@ -92,7 +93,11 @@ function LoginForm() {
               <Label htmlFor="role">Role (Demo Feature)</Label>
               <Select
                 value={selectedRole}
-                onValueChange={(value) => setSelectedRole(value as 'EMPLOYEE' | 'MANAGER' | 'COWORKER')}
+                onValueChange={(value) => {
+                  if (isValidRole(value)) {
+                    setSelectedRole(value);
+                  }
+                }}
               >
                 <SelectTrigger id="role">
                   <SelectValue placeholder="Use profile default role" />

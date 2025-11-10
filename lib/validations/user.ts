@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { paginationSchema } from '@/lib/pagination';
 
 /**
  * Validation schema for non-sensitive profile fields
@@ -45,10 +46,9 @@ export const profileIdSchema = z.object({
 
 /**
  * Schema for paginated profile list requests
+ * Extends centralized pagination schema with user-specific filters
  */
-export const profileListSchema = z.object({
-  limit: z.number().min(1).max(100).default(10),
-  cursor: z.string().cuid().optional(),
+export const profileListSchema = paginationSchema.extend({
   search: z.string().optional(),
   department: z.string().optional(),
   role: z.enum(['EMPLOYEE', 'MANAGER', 'COWORKER']).optional(),

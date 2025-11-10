@@ -32,8 +32,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Search, Eye, Loader2 } from 'lucide-react';
+import { isValidRole } from '@/lib/type-guards';
 
 // Table columns definition
+// Note: These columns only access public fields that are always present
+// regardless of user role (public or sensitive select)
 const columns: ColumnDef<{
   id: string;
   name: string;
@@ -41,6 +44,12 @@ const columns: ColumnDef<{
   department: string | null;
   title: string | null;
   role: string;
+  // Allow additional fields for managers (sensitive fields)
+  salary?: string | null;
+  ssn?: string | null;
+  address?: string | null;
+  performanceRating?: string | null;
+  [key: string]: unknown;
 }>[] = [
   {
     accessorKey: 'name',
@@ -66,7 +75,12 @@ const columns: ColumnDef<{
     accessorKey: 'role',
     header: 'Role',
     cell: ({ row }) => {
-      const role = row.getValue('role') as string;
+      const roleValue = row.getValue('role');
+      // Validate role is a valid string
+      if (typeof roleValue !== 'string') {
+        return <Badge variant="outline">Unknown</Badge>;
+      }
+      const role = roleValue;
       const variant =
         role === 'MANAGER' ? 'default' : role === 'EMPLOYEE' ? 'secondary' : 'outline';
       return <Badge variant={variant}>{role}</Badge>;
@@ -109,8 +123,8 @@ export default function ProfilesPage() {
         search: globalFilter || undefined,
         department: selectedDepartment !== 'all' ? selectedDepartment : undefined,
         role:
-          selectedRole !== 'all'
-            ? (selectedRole as 'EMPLOYEE' | 'MANAGER' | 'COWORKER')
+          selectedRole !== 'all' && isValidRole(selectedRole)
+            ? selectedRole
             : undefined,
       },
       {
@@ -118,15 +132,30 @@ export default function ProfilesPage() {
       }
     );
 
-  // Fetch departments for filter
-  const { data: departments } = trpc.user.getDepartments.useQuery();
+  // Fetch departments for filter (static data - cache for 30 minutes)
+  const { data: departments } = trpc.user.getDepartments.useQuery(undefined, {
+    staleTime: 30 * 60 * 1000, // 30 minutes - departments rarely change
+    gcTime: 60 * 60 * 1000, // 1 hour
+  });
 
   // Flatten paginated data
   const users = data?.pages.flatMap((page) => page.users) ?? [];
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
-    data: users,
+    data: users as Array<{
+      id: string;
+      name: string;
+      email: string;
+      department: string | null;
+      title: string | null;
+      role: string;
+      salary?: string | null;
+      ssn?: string | null;
+      address?: string | null;
+      performanceRating?: string | null;
+      [key: string]: unknown;
+    }>, // Type assertion: users can have public or sensitive fields, but columns only use public fields
     columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),

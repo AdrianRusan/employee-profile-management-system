@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc/Provider';
-import { useAuthStore } from '@/stores/authStore';
 import { AbsenceRequestDialog } from '@/components/AbsenceRequestDialog';
 import { AbsenceCalendar } from '@/components/AbsenceCalendar';
 import { AbsenceTable } from '@/components/AbsenceTable';
@@ -21,13 +20,14 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
+import { Permissions } from '@/lib/permissions';
 
 /**
  * Absences management page
  * Shows user's own absence requests and manager approval interface
  */
 export default function AbsencesPage() {
-  const { user } = useAuthStore();
+  const { data: user } = trpc.auth.getCurrentUser.useQuery();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedAbsence, setSelectedAbsence] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('my-requests');
@@ -37,11 +37,15 @@ export default function AbsencesPage() {
   // Fetch current user's absences
   const { data: myAbsences, isLoading: myAbsencesLoading } = trpc.absence.getMy.useQuery();
 
-  // Fetch all absences (manager only)
+  // Fetch all absences (manager only) - using centralized permissions
+  // Real-time data for approvals - shorter staleTime for fresh data
+  const canViewAllAbsences = user ? Permissions.absence.viewAll(user) : false;
   const { data: allAbsences, isLoading: allAbsencesLoading } = trpc.absence.getAll.useQuery(
-    undefined,
+    {},
     {
-      enabled: user?.role === 'MANAGER',
+      enabled: canViewAllAbsences,
+      staleTime: 1 * 60 * 1000, // 1 minute - need fresh data for approval queue
+      gcTime: 5 * 60 * 1000, // 5 minutes
     }
   );
 
@@ -141,7 +145,7 @@ export default function AbsencesPage() {
         <TabsList>
           <TabsTrigger value="my-requests">My Requests</TabsTrigger>
           <TabsTrigger value="calendar">Calendar</TabsTrigger>
-          {user?.role === 'MANAGER' && (
+          {canViewAllAbsences && (
             <TabsTrigger value="team-requests">Team Requests</TabsTrigger>
           )}
         </TabsList>
@@ -178,8 +182,8 @@ export default function AbsencesPage() {
           <AbsenceCalendar />
         </TabsContent>
 
-        {/* Team Requests Tab (Manager Only) */}
-        {user?.role === 'MANAGER' && (
+        {/* Team Requests Tab (Manager Only) - using centralized permissions */}
+        {canViewAllAbsences && (
           <TabsContent value="team-requests" className="space-y-4">
             <Card>
               <CardHeader>
@@ -197,7 +201,7 @@ export default function AbsencesPage() {
                   </div>
                 ) : (
                   <AbsenceTable
-                    absences={allAbsences}
+                    absences={allAbsences?.absenceRequests}
                     showUser
                     showApproval
                     showActions={false}

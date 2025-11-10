@@ -3,6 +3,7 @@ import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 import { getCurrentUser } from '@/lib/session';
+import { isFile } from '@/lib/type-guards';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
@@ -21,11 +22,13 @@ export async function POST(request: NextRequest) {
 
     // Get form data
     const formData = await request.formData();
-    const file = formData.get('file') as File | null;
+    const fileValue = formData.get('file');
 
-    if (!file) {
+    if (!isFile(fileValue)) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
+
+    const file = fileValue;
 
     // Validate file type
     if (!ALLOWED_TYPES.includes(file.type)) {

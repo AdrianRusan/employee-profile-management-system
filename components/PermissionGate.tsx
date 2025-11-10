@@ -1,95 +1,76 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { useAuthStore } from '@/stores/authStore';
 import { trpc } from '@/lib/trpc/Provider';
-import { Role } from '@prisma/client';
+import { Permissions, SessionUser } from '@/lib/permissions';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface PermissionGateProps {
   children: ReactNode;
-  /** Required role to view this content */
-  requiredRole?: Role;
-  /** Required roles (any of these roles can view) */
-  requiredRoles?: Role[];
-  /** Custom permission check function */
-  permissionCheck?: (userId: string, userRole: Role) => boolean;
   /** Content to show when permission is denied */
   fallback?: ReactNode;
-  /** User ID for custom permission checks (e.g., checking if user owns resource) */
-  resourceOwnerId?: string;
-  /** Allow access if user owns the resource */
-  allowOwner?: boolean;
+  /** Custom permission check function using centralized Permissions object */
+  check: (permissions: typeof Permissions, user: SessionUser) => boolean;
 }
 
 /**
- * PermissionGate component for conditional rendering based on user permissions
+ * PermissionGate component for conditional rendering based on centralized permissions
+ *
+ * This component uses the centralized Permissions object to ensure consistent
+ * permission enforcement between client and server. Always use the Permissions
+ * object from @/lib/permissions for authorization checks.
  *
  * @example
- * // Show content only to managers
- * <PermissionGate requiredRole="MANAGER">
- *   <AdminPanel />
- * </PermissionGate>
- *
- * @example
- * // Show content to managers or employees
- * <PermissionGate requiredRoles={['MANAGER', 'EMPLOYEE']}>
- *   <SensitiveData />
- * </PermissionGate>
- *
- * @example
- * // Show content to owner or managers
- * <PermissionGate resourceOwnerId={profileUserId} allowOwner>
- *   <EditButton />
- * </PermissionGate>
- *
- * @example
- * // Custom permission check
+ * // Show content only if user can delete target user
  * <PermissionGate
- *   permissionCheck={(userId, role) => role === 'MANAGER' || userId === currentUserId}
- *   fallback={<p>Access denied</p>}
+ *   check={(perms, user) => perms.user.delete(user, targetUser)}
+ *   fallback={<div>Access Denied</div>}
  * >
- *   <PrivateContent />
+ *   <DeleteButton />
+ * </PermissionGate>
+ *
+ * @example
+ * // Show content only if user can view sensitive data
+ * <PermissionGate
+ *   check={(perms, user) => perms.user.viewSensitive(user, targetUser)}
+ * >
+ *   <SalaryField salary={user.salary} />
+ * </PermissionGate>
+ *
+ * @example
+ * // Show content only if user can approve absences
+ * <PermissionGate check={(perms, user) => perms.absence.approve(user)}>
+ *   <ApprovalButtons />
+ * </PermissionGate>
+ *
+ * @example
+ * // Show content only if user can give feedback to target
+ * <PermissionGate
+ *   check={(perms, user) => perms.feedback.give(user, targetUser)}
+ *   fallback={<p>You cannot give feedback to yourself</p>}
+ * >
+ *   <FeedbackForm />
  * </PermissionGate>
  */
 export function PermissionGate({
   children,
-  requiredRole,
-  requiredRoles,
-  permissionCheck,
   fallback = null,
-  resourceOwnerId,
-  allowOwner = false,
+  check,
 }: PermissionGateProps) {
-  const { user } = useAuthStore();
-  const { data: currentUser } = trpc.auth.getCurrentUser.useQuery();
+  const { data: currentUser, isLoading } = trpc.auth.getCurrentUser.useQuery();
 
-  const activeUser = currentUser || user;
+  if (isLoading) {
+    return <Skeleton className="h-8 w-full" />;
+  }
 
-  if (!activeUser) {
+  if (!currentUser) {
     return <>{fallback}</>;
   }
 
-  // Check if user is the resource owner
-  if (allowOwner && resourceOwnerId && activeUser.id === resourceOwnerId) {
-    return <>{children}</>;
-  }
+  // Use centralized permission check
+  const hasPermission = check(Permissions, currentUser);
 
-  // Check custom permission function
-  if (permissionCheck) {
-    const hasPermission = permissionCheck(activeUser.id, activeUser.role);
-    if (!hasPermission) {
-      return <>{fallback}</>;
-    }
-    return <>{children}</>;
-  }
-
-  // Check single required role
-  if (requiredRole && activeUser.role !== requiredRole) {
-    return <>{fallback}</>;
-  }
-
-  // Check multiple required roles
-  if (requiredRoles && !requiredRoles.includes(activeUser.role)) {
+  if (!hasPermission) {
     return <>{fallback}</>;
   }
 

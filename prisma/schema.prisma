@@ -23,6 +23,7 @@ model User {
   ssn                String?
   address            String?
   performanceRating  Int?
+  deletedAt          DateTime?
   feedbackGiven      Feedback[]        @relation("FeedbackGiver")
   feedbackReceived   Feedback[]        @relation("FeedbackReceiver")
   absenceRequests    AbsenceRequest[]
@@ -32,6 +33,9 @@ model User {
   @@index([email])
   @@index([department])
   @@index([role])
+  @@index([department, role])
+  @@index([performanceRating])
+  @@index([deletedAt])
 }
 
 model Feedback {
@@ -39,15 +43,21 @@ model Feedback {
   content         String
   polishedContent String?
   isPolished      Boolean  @default(false)
-  giver           User     @relation("FeedbackGiver", fields: [giverId], references: [id])
+  giver           User     @relation("FeedbackGiver", fields: [giverId], references: [id], onDelete: Cascade)
   giverId         String
-  receiver        User     @relation("FeedbackReceiver", fields: [receiverId], references: [id])
+  receiver        User     @relation("FeedbackReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
   receiverId      String
+  deletedAt       DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   @@index([receiverId, createdAt(sort: Desc)])
   @@index([giverId])
+  @@index([giverId, createdAt(sort: Desc)])
+  @@index([isPolished])
+  @@index([receiverId, isPolished])
+  @@index([deletedAt])
+  @@index([receiverId, createdAt(sort: Desc), deletedAt])
 }
 
 model AbsenceRequest {
@@ -56,13 +66,19 @@ model AbsenceRequest {
   endDate   DateTime
   reason    String
   status    AbsenceStatus @default(PENDING)
-  user      User          @relation(fields: [userId], references: [id])
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
+  deletedAt DateTime?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
   @@index([userId])
   @@index([status])
+  @@index([userId, status])
+  @@index([startDate, endDate])
+  @@index([status, startDate])
+  @@index([deletedAt])
+  @@index([userId, deletedAt])
 }
 
 enum Role {

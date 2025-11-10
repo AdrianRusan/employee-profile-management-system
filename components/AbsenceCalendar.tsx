@@ -49,7 +49,8 @@ export function AbsenceCalendar({ userId, showLegend = true }: AbsenceCalendarPr
     const dateStatusMap = new Map<string, 'APPROVED' | 'PENDING' | 'REJECTED'>();
 
     // Helpers to normalize and operate in UTC to avoid off-by-one issues
-    const toUtcMidnight = (input: string | Date): Date => {
+    const toUtcMidnight = (input: unknown): Date => {
+      // Handle string input
       if (typeof input === 'string') {
         // If input is a date-only string, treat it as UTC midnight explicitly
         if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
@@ -58,8 +59,14 @@ export function AbsenceCalendar({ userId, showLegend = true }: AbsenceCalendarPr
         const d = new Date(input);
         return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
       }
-      const d = input;
-      return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+      // Handle Date input
+      if (input instanceof Date) {
+        const d = input;
+        return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+      }
+      // Fallback: treat as current date
+      const now = new Date();
+      return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     };
 
     const getUtcDateKey = (d: Date): string => {
@@ -70,8 +77,9 @@ export function AbsenceCalendar({ userId, showLegend = true }: AbsenceCalendarPr
     };
 
     absences.forEach((absence) => {
-      const start = toUtcMidnight(absence.startDate as unknown as string);
-      const end = toUtcMidnight(absence.endDate as unknown as string);
+      // Convert startDate and endDate (could be Date or string from serialization)
+      const start = toUtcMidnight(absence.startDate);
+      const end = toUtcMidnight(absence.endDate);
 
       // Iterate day-by-day using fixed 24h steps in UTC
       const DAY_MS = 86400000; // 24 * 60 * 60 * 1000
