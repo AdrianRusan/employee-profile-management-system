@@ -11,11 +11,6 @@ jobs:
     name: E2E Full Suite
     runs-on: ubuntu-latest
 
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4, 5] # 5 parallel workers
-
     services:
       postgres:
         image: postgres:15
@@ -64,14 +59,14 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run E2E full suite
-        run: npm run test:e2e:full -- --shard=${{ matrix.shard }}/5
-        timeout-minutes: 60
+        run: npm run test:e2e:full
+        timeout-minutes: 30
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report-full-${{ matrix.shard }}
+          name: playwright-report-full
           path: playwright-report/
           retention-days: 30
 
@@ -79,7 +74,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-videos-${{ matrix.shard }}
+          name: playwright-videos
           path: test-results/
           retention-days: 7
 
