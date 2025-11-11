@@ -45,8 +45,16 @@ export const sessionConfig = {
   /** Use secure cookies - auto-enabled in production */
   secure: getEnvBool('SESSION_SECURE', process.env.NODE_ENV === 'production'),
 
-  /** SameSite cookie attribute - 'strict' | 'lax' | 'none' */
-  sameSite: (process.env.SESSION_SAME_SITE as 'strict' | 'lax' | 'none') || 'strict',
+  /**
+   * SameSite cookie attribute - 'strict' | 'lax' | 'none'
+   *
+   * Default: 'lax' for production compatibility
+   * - 'lax': Cookies sent on top-level navigation (e.g., clicking links, redirects)
+   *          while still protecting against CSRF. Best for most production apps.
+   * - 'strict': Cookies ONLY sent on same-site requests. Breaks navigation flows.
+   * - 'none': Cookies sent everywhere (requires secure=true). Use for cross-domain.
+   */
+  sameSite: (process.env.SESSION_SAME_SITE as 'strict' | 'lax' | 'none') || 'lax',
 } as const;
 
 /**
