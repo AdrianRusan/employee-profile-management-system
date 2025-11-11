@@ -16,8 +16,6 @@ export default function ProfilesError({
 }) {
   const router = useRouter();
   useEffect(() => {
-    console.error('Profiles error:', error);
-
     // Send error to Sentry for tracking
     Sentry.captureException(error, {
       tags: {

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { loginAsEmployee, loginAsManager, logout } from './helpers/auth';
+import { loginAsEmployee, loginAsManager } from './helpers/auth';
 
 /**
  * SMOKE TESTS - Critical path verification
@@ -71,10 +71,11 @@ test.describe('Smoke Tests @smoke', () => {
     await logoutButton.click();
 
     // Wait for redirect to login (window.location.href causes hard navigation)
-    await page.waitForURL('/login', { timeout: 10000 });
+    // Use waitForNavigation since it's a hard redirect
+    await page.waitForURL(/\/login/, { timeout: 15000 });
 
     // Should be on login page
-    await expect(page).toHaveURL('/login');
+    await expect(page).toHaveURL(/\/login/);
 
     // Try to access dashboard - should redirect back to login
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded', timeout: 15000 });

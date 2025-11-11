@@ -7,7 +7,6 @@ import { Users, MessageSquare, CalendarDays, Home, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc/Provider';
-import { useRouter } from 'next/navigation';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -23,8 +22,6 @@ interface SidebarProps {
 
 export function Sidebar({ className, onNavigate }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
-  const utils = trpc.useUtils();
 
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {

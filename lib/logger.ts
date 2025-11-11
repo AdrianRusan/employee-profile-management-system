@@ -28,7 +28,8 @@ export const logger = pino({
   level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
 
   // Pretty print in development for better readability
-  ...(process.env.NODE_ENV === 'development' && {
+  // Disable transport during tests to avoid thread-stream issues
+  ...(process.env.NODE_ENV === 'development' && process.env.VITEST !== 'true' && !process.env.PLAYWRIGHT_TEST_BASE_URL && {
     transport: {
       target: 'pino-pretty',
       options: {

@@ -104,7 +104,6 @@ export function AvatarUpload({
           onUploadSuccess?.(data.url);
         }
       } catch (error) {
-        console.error('Upload error:', error);
         toast.error(error instanceof Error ? error.message : 'Failed to upload avatar');
         setPreview(currentAvatar || null);
       } finally {

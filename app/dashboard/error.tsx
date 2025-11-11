@@ -14,9 +14,6 @@ export default function DashboardError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log full error details once for debugging/observability in all environments
-    console.error('Dashboard error:', error);
-
     // Send error to Sentry for tracking
     Sentry.captureException(error, {
       tags: {

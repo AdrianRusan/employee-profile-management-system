@@ -15,9 +15,6 @@ export default function GlobalError({
 }) {
   const router = useRouter();
   useEffect(() => {
-    // Log error locally
-    console.error('Global error:', error);
-
     // Send error to Sentry for tracking
     Sentry.captureException(error, {
       tags: {

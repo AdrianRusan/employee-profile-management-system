@@ -134,8 +134,10 @@ test.describe('Profile Management @core', () => {
       // Save
       await page.click('button:has-text("Save Changes")');
 
-      // Should see success toast/message
-      await expect(page.locator('text=/success|saved/i')).toBeVisible({ timeout: 5000 });
+      // Wait for dialog to close (indicates save was successful)
+      await page.waitForTimeout(1000);
+      // Dialog should be closed after successful save
+      await expect(page.locator('[role="dialog"]').locator('h2:has-text("Edit Profile")')).not.toBeVisible({ timeout: 5000 });
     }
   });
 

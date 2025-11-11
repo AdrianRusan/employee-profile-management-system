@@ -30,14 +30,12 @@ export async function fetchCsrfToken(): Promise<string | null> {
   try {
     const response = await fetch('/api/csrf');
     if (!response.ok) {
-      console.error('Failed to fetch CSRF token:', response.statusText);
       return null;
     }
 
     const data = await response.json();
     return data.csrfToken;
-  } catch (error) {
-    console.error('Error fetching CSRF token:', error);
+  } catch (_error) {
     return null;
   }
 }
