@@ -9,6 +9,7 @@ export default [
       "dist/**",
       ".worktrees/**",
       "*.config.js",
+      "scripts/**", // Ignore scripts directory (uses CommonJS)
     ],
   },
 ];
