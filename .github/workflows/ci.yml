@@ -51,7 +51,7 @@ jobs:
         run: npm run type-check
 
   test:
-    name: Test
+    name: Unit Tests
     runs-on: ubuntu-latest
 
     services:
@@ -96,7 +96,21 @@ jobs:
 
       - name: Seed test database
         run: npx prisma db seed
-        continue-on-error: true
+
+      - name: Verify test data
+        run: |
+          node -e "
+          const { PrismaClient } = require('@prisma/client');
+          const prisma = new PrismaClient();
+          prisma.user.count().then(count => {
+            if (count === 0) {
+              console.error('ERROR: No users in database after seeding!');
+              process.exit(1);
+            }
+            console.log(\`✓ Database seeded successfully (\${count} users)\`);
+            return prisma.\$disconnect();
+          });
+          "
 
       - name: Run unit tests
         run: npm run test -- --passWithNoTests
@@ -150,7 +164,21 @@ jobs:
 
       - name: Seed test database
         run: npx prisma db seed
-        continue-on-error: true
+
+      - name: Verify test data
+        run: |
+          node -e "
+          const { PrismaClient } = require('@prisma/client');
+          const prisma = new PrismaClient();
+          prisma.user.count().then(count => {
+            if (count === 0) {
+              console.error('ERROR: No users in database after seeding!');
+              process.exit(1);
+            }
+            console.log(\`✓ Database seeded successfully (\${count} users)\`);
+            return prisma.\$disconnect();
+          });
+          "
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium

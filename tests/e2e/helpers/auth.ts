@@ -19,6 +19,9 @@ export async function login(page: Page, email: string, role?: 'MANAGER' | 'EMPLO
 
   // Wait for redirect to dashboard
   await page.waitForURL('/dashboard', { timeout: 15000 });
+
+  // Wait for dashboard to fully load (all network requests complete)
+  await page.waitForLoadState('networkidle', { timeout: 10000 });
 }
 
 /**

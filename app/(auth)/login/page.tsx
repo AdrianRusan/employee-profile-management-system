@@ -47,9 +47,13 @@ function LoginForm() {
     onSuccess: async () => {
       // Invalidate and refetch user data to update tRPC query cache
       await utils.auth.getCurrentUser.invalidate();
+      // Wait for refetch to complete before navigation to ensure session is fully established
+      await utils.auth.getCurrentUser.refetch();
       router.push(from);
     },
     onError: (error) => {
+      // Log error for debugging in CI logs
+      console.error('[LOGIN ERROR]:', error.message, error);
       setError('email', {
         type: 'manual',
         message: error.message,
