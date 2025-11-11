@@ -5,8 +5,10 @@ const tokens = new Tokens.default();
 
 // Secret is stored in session (iron-session encrypted)
 // Token is sent to client and validated on mutations
-const CSRF_SECRET_COOKIE = '__Host-csrf-secret';
-const CSRF_TOKEN_COOKIE = '__Host-csrf-token';
+// Use __Host- prefix only in production (requires secure: true)
+const isProduction = process.env.NODE_ENV === 'production';
+const CSRF_SECRET_COOKIE = isProduction ? '__Host-csrf-secret' : 'csrf-secret';
+const CSRF_TOKEN_COOKIE = isProduction ? '__Host-csrf-token' : 'csrf-token';
 
 /**
  * Generate a new CSRF token pair (secret + token)

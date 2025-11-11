@@ -10,9 +10,13 @@ export function getCsrfTokenFromCookie(): string | null {
     return null;
   }
 
+  // Use __Host- prefix only in production (requires secure: true)
+  const isProduction = process.env.NODE_ENV === 'production';
+  const cookieName = isProduction ? '__Host-csrf-token' : 'csrf-token';
+
   const cookies = document.cookie.split(';');
   const csrfCookie = cookies.find(cookie =>
-    cookie.trim().startsWith('__Host-csrf-token=')
+    cookie.trim().startsWith(`${cookieName}=`)
   );
 
   if (!csrfCookie) {

@@ -49,11 +49,18 @@ export function AbsenceRequestDialog({ children, onSuccess }: AbsenceRequestDial
   const [open, setOpen] = useState(false);
   const utils = trpc.useUtils();
 
+  // Helper to get normalized date (today at midnight)
+  const getTodayNormalized = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  };
+
   const form = useForm<AbsenceRequestFormInput>({
     resolver: zodResolver(absenceRequestFormSchema),
     defaultValues: {
-      startDate: new Date(),
-      endDate: new Date(),
+      startDate: getTodayNormalized(),
+      endDate: getTodayNormalized(),
       reason: '',
     },
   });
@@ -61,7 +68,11 @@ export function AbsenceRequestDialog({ children, onSuccess }: AbsenceRequestDial
   const createMutation = trpc.absence.create.useMutation({
     onSuccess: () => {
       toast.success('Absence request created successfully!');
-      form.reset();
+      form.reset({
+        startDate: getTodayNormalized(),
+        endDate: getTodayNormalized(),
+        reason: '',
+      });
       setOpen(false);
 
       // Invalidate queries to refresh data
@@ -81,8 +92,20 @@ export function AbsenceRequestDialog({ children, onSuccess }: AbsenceRequestDial
     createMutation.mutate(data);
   };
 
+  // Reset form when dialog opens to ensure dates are always current
+  const handleOpenChange = (newOpen: boolean) => {
+    if (newOpen) {
+      form.reset({
+        startDate: getTodayNormalized(),
+        endDate: getTodayNormalized(),
+        reason: '',
+      });
+    }
+    setOpen(newOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {children || (
           <Button>
