@@ -151,8 +151,8 @@ test.describe('Absence Management @core', () => {
     if (await approveButton.isVisible()) {
       await approveButton.click();
 
-      // Should show success message
-      await expect(page.locator('text=/approved/i')).toBeVisible({ timeout: 5000 });
+      // Should show success toast message
+      await expect(page.getByText(/absence request approved successfully/i)).toBeVisible({ timeout: 5000 });
     }
   });
 
@@ -169,8 +169,8 @@ test.describe('Absence Management @core', () => {
     if (await rejectButton.isVisible()) {
       await rejectButton.click();
 
-      // Should show success message
-      await expect(page.locator('text=/rejected/i')).toBeVisible({ timeout: 5000 });
+      // Should show success toast message
+      await expect(page.getByText(/absence request rejected successfully/i)).toBeVisible({ timeout: 5000 });
     }
   });
 
