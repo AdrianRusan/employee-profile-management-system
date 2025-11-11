@@ -27,9 +27,9 @@ jobs:
           - 5432:5432
 
     env:
-      DATABASE_URL: ${{ secrets.CI_DATABASE_URL }}
-      SESSION_SECRET: ${{ secrets.CI_SESSION_SECRET }}
-      ENCRYPTION_KEY: ${{ secrets.CI_ENCRYPTION_KEY }}
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+      SESSION_SECRET: test-session-secret-min-32-chars-for-ci-testing-only
+      ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
       NEXT_PUBLIC_APP_URL: http://localhost:3000
 
     steps:
