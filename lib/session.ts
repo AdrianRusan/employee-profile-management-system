@@ -44,15 +44,8 @@ export async function createSession(userId: string, email: string, role: 'EMPLOY
 
 export async function deleteSession(): Promise<void> {
   const session = await getSession();
-  // Clear all session data first
-  session.userId = undefined as any;
-  session.id = undefined as any;
-  session.email = undefined as any;
-  session.role = undefined as any;
-  // Then destroy the session
+  // Destroy the session - this clears all data and the cookie
   session.destroy();
-  // Ensure session is saved/destroyed
-  await session.save();
 }
 
 export async function getCurrentUser(): Promise<SessionData | null> {
