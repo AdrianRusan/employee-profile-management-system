@@ -54,6 +54,10 @@ export async function polishFeedback(
 
   // Retry loop with exponential backoff
   for (let attempt = 0; attempt < maxRetries; attempt++) {
+    // Create abort controller for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
     try {
       const response = await fetch(
         'https://router.huggingface.co/v1/chat/completions',
@@ -70,8 +74,11 @@ export async function polishFeedback(
             temperature: 0.7,
             top_p: 0.9,
           }),
+          signal: controller.signal,
         }
       );
+
+      clearTimeout(timeoutId);
 
       // Handle non-200 status codes
       if (!response.ok) {
@@ -87,6 +94,7 @@ export async function polishFeedback(
       if (result.choices && result.choices.length > 0) {
         const messageContent = result.choices[0].message?.content;
         if (messageContent && messageContent.trim().length > 0) {
+          logger.info({ attempt: attempt + 1 }, 'AI feedback polishing successful');
           return messageContent.trim();
         }
       }
@@ -94,11 +102,22 @@ export async function polishFeedback(
       // If we got a response but no generated text, treat as error
       throw new Error('No generated text in response');
     } catch (error) {
-      lastError = error as Error;
-      logger.error(
-        { error, attempt: attempt + 1, maxRetries },
-        `HuggingFace API attempt ${attempt + 1}/${maxRetries} failed`
-      );
+      clearTimeout(timeoutId);
+
+      // Handle timeout errors
+      if (error instanceof Error && error.name === 'AbortError') {
+        lastError = new Error('Request timeout after 30 seconds');
+        logger.error(
+          { attempt: attempt + 1, maxRetries },
+          `HuggingFace API attempt ${attempt + 1}/${maxRetries} timed out`
+        );
+      } else {
+        lastError = error as Error;
+        logger.error(
+          { error, attempt: attempt + 1, maxRetries },
+          `HuggingFace API attempt ${attempt + 1}/${maxRetries} failed`
+        );
+      }
 
       // Don't retry on the last attempt
       if (attempt < maxRetries - 1) {
