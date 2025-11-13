@@ -10,6 +10,7 @@ import { Permissions, assertPermission } from '@/lib/permissions';
 import { polishFeedback } from '@/lib/ai/huggingface';
 import { USER_FEEDBACK_SELECT } from '@/lib/prisma/selects';
 import { findOrThrow } from '@/lib/errors';
+import { sanitizeFeedback } from '@/lib/sanitize';
 
 /**
  * Feedback router for peer feedback management
@@ -48,11 +49,15 @@ export const feedbackRouter = router({
         receiverId
       );
 
+      // Sanitize feedback content to prevent XSS attacks
+      const sanitizedContent = sanitizeFeedback(content);
+      const sanitizedPolishedContent = polishedContent ? sanitizeFeedback(polishedContent) : null;
+
       // Create feedback entry
       const feedback = await ctx.prisma.feedback.create({
         data: {
-          content,
-          polishedContent: polishedContent || null,
+          content: sanitizedContent,
+          polishedContent: sanitizedPolishedContent,
           isPolished,
           giverId: ctx.session.userId,
           receiverId,

@@ -9,6 +9,7 @@ import { Permissions, assertPermission } from '@/lib/permissions';
 import { USER_ABSENCE_SELECT, USER_CARD_SELECT } from '@/lib/prisma/selects';
 import { AppErrors, findOrThrow } from '@/lib/errors';
 import { Prisma } from '@prisma/client';
+import { sanitizeUserInput, SANITIZABLE_FIELDS } from '@/lib/sanitize';
 
 /**
  * Absence router for time-off request management
@@ -88,6 +89,9 @@ export const absenceRouter = router({
               );
             }
 
+            // Sanitize reason to prevent XSS attacks
+            const sanitizedReason = sanitizeUserInput({ reason }, SANITIZABLE_FIELDS.absence).reason as string;
+
             // Create absence request within same transaction
             // If two transactions both reach this point, serializable isolation
             // will cause one to fail with a serialization error
@@ -95,7 +99,7 @@ export const absenceRouter = router({
               data: {
                 startDate,
                 endDate,
-                reason,
+                reason: sanitizedReason,
                 userId: ctx.session.userId,
               },
               include: {

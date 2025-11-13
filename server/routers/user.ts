@@ -11,6 +11,7 @@ import { Prisma } from '@prisma/client';
 import { encrypt, decrypt } from '@/lib/encryption';
 import { AppErrors, findOrThrow } from '@/lib/errors';
 import { USER_PUBLIC_SELECT, USER_SENSITIVE_SELECT } from '@/lib/prisma/selects';
+import { sanitizeUserInput, SANITIZABLE_FIELDS } from '@/lib/sanitize';
 
 /**
  * Helper function to serialize user data for client components
@@ -183,10 +184,13 @@ export const userRouter = router({
         'You do not have permission to edit this profile'
       );
 
+      // Sanitize user input to prevent XSS attacks
+      const sanitizedData = sanitizeUserInput(input.data, SANITIZABLE_FIELDS.user);
+
       // Update user profile
       const updatedUser = await ctx.prisma.user.update({
         where: { id: input.id },
-        data: input.data,
+        data: sanitizedData,
       });
 
       ctx.logger.info({
@@ -229,6 +233,11 @@ export const userRouter = router({
           ctx.logger.warn({ targetUserId: input.id, error }, 'Invalid salary value');
           throw AppErrors.badRequest('Invalid salary value');
         }
+      }
+
+      // Sanitize address field if provided
+      if (data.address && typeof data.address === 'string') {
+        data.address = sanitizeUserInput({ address: data.address }, ['address']).address as string;
       }
 
       // Encrypt SSN before storing (GDPR/CCPA/PCI DSS compliance)
