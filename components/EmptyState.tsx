@@ -40,13 +40,13 @@ export function EmptyState({
   return (
     <Card>
       <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="rounded-full bg-gray-100 p-4">
-          <Icon className="h-10 w-10 text-gray-400" aria-hidden="true" />
+        <div className="rounded-full bg-muted p-4">
+          <Icon className="h-10 w-10 text-muted-foreground" aria-hidden="true" />
         </div>
-        <h3 className="mt-4 text-lg font-semibold text-gray-900">{title}</h3>
-        <p className="mt-2 max-w-sm text-sm text-gray-600">{description}</p>
+        <h3 className="mt-4 text-lg font-semibold">{title}</h3>
+        <p className="mt-2 max-w-sm text-sm text-muted-foreground">{description}</p>
         {action && (
-          <Button className="mt-6" onClick={action.onClick}>
+          <Button className="mt-6" onClick={action.onClick} aria-label={action.label}>
             {action.label}
           </Button>
         )}
