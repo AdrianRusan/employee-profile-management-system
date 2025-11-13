@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { canViewSensitiveData, canEditProfile } from '@/lib/permissions';
+import { Permissions } from '@/lib/permissions';
 import { Edit, Mail, Briefcase, Building2, DollarSign, Shield, MapPin, TrendingUp } from 'lucide-react';
 
 interface ProfileCardProps {
@@ -20,8 +20,9 @@ interface ProfileCardProps {
  * with role-based field visibility
  */
 export function ProfileCard({ user, currentUserId, currentUserRole, onEdit }: ProfileCardProps) {
-  const canEdit = canEditProfile(currentUserRole, currentUserId, user.id);
-  const canSeeSensitive = canViewSensitiveData(currentUserRole, currentUserId, user.id);
+  const viewer = { id: currentUserId, role: currentUserRole, email: '' };
+  const canEdit = Permissions.user.edit(viewer, { id: user.id });
+  const canSeeSensitive = Permissions.user.viewSensitive(viewer, { id: user.id });
 
   // Get user initials for avatar fallback
   const initials = user.name

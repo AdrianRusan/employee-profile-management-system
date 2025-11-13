@@ -6,6 +6,7 @@ import { getCurrentUser } from '@/lib/session';
 import { isFile } from '@/lib/type-guards';
 import { validateCsrfFromRequest } from '@/lib/csrf';
 import { logger } from '@/lib/logger';
+import { rateLimit, getRateLimitIdentifier, checkRateLimit } from '@/lib/rate-limit';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
@@ -41,6 +42,13 @@ export async function POST(request: NextRequest) {
     const session = await getCurrentUser();
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Rate limiting (10 uploads per hour)
+    const identifier = getRateLimitIdentifier(request, session.userId);
+    const rateLimitCheck = await checkRateLimit(rateLimit.upload, identifier, 'avatar-upload');
+    if (!rateLimitCheck.allowed) {
+      return rateLimitCheck.response;
     }
 
     // Validate CSRF token
@@ -136,6 +144,13 @@ export async function DELETE(request: NextRequest) {
     const session = await getCurrentUser();
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Rate limiting (uses same limit as upload)
+    const identifier = getRateLimitIdentifier(request, session.userId);
+    const rateLimitCheck = await checkRateLimit(rateLimit.upload, identifier, 'avatar-delete');
+    if (!rateLimitCheck.allowed) {
+      return rateLimitCheck.response;
     }
 
     // Validate CSRF token

@@ -8,6 +8,7 @@ import { createLogger, logger } from '@/lib/logger';
 import * as Sentry from '@sentry/nextjs';
 import { ZodError } from 'zod';
 import type { Logger } from 'pino';
+import { rateLimit, getRateLimitIdentifier, checkRateLimit } from '@/lib/rate-limit';
 
 // Define context type
 export interface Context {
@@ -116,6 +117,16 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next, type, path
   // Validate CSRF token for mutations (state-changing operations)
   // Queries (read operations) don't need CSRF protection
   if (type === 'mutation') {
+    // Rate limiting for mutations (30 per minute)
+    const identifier = getRateLimitIdentifier(ctx.req, ctx.session.userId);
+    const rateLimitCheck = await checkRateLimit(rateLimit.mutation, identifier, `mutation:${path}`);
+    if (!rateLimitCheck.allowed) {
+      throw new TRPCError({
+        code: 'TOO_MANY_REQUESTS',
+        message: 'Too many requests. Please slow down and try again.',
+      });
+    }
+
     const isValidCsrf = await validateCsrfFromRequest(ctx.req);
 
     if (!isValidCsrf) {

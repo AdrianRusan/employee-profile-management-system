@@ -1,8 +1,10 @@
 import { z } from 'zod';
+import { TRPCError } from '@trpc/server';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { createSession, deleteSession } from '@/lib/session';
 import { findOrThrow } from '@/lib/errors';
 import { logAuthEvent } from '@/lib/logger';
+import { rateLimit, getRateLimitIdentifier, checkRateLimit } from '@/lib/rate-limit';
 
 export const authRouter = router({
   // Login procedure - demo authentication without password
@@ -14,6 +16,16 @@ export const authRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       ctx.logger.info({ email: input.email }, 'Login attempt');
+
+      // Rate limiting (5 login attempts per 15 minutes)
+      const identifier = getRateLimitIdentifier(ctx.req);
+      const rateLimitCheck = await checkRateLimit(rateLimit.login, identifier, 'login');
+      if (!rateLimitCheck.allowed) {
+        throw new TRPCError({
+          code: 'TOO_MANY_REQUESTS',
+          message: 'Too many login attempts. Please try again later.',
+        });
+      }
 
       // Find user by email (exclude soft-deleted users)
       const user = await findOrThrow(
