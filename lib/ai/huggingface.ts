@@ -23,8 +23,27 @@ function delay(ms: number): Promise<void> {
 }
 
 /**
+ * Redact PII from text before sending to AI
+ */
+function redactPII(text: string): string {
+  // Redact email addresses
+  let sanitized = text.replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, '[EMAIL]');
+
+  // Redact SSN patterns (XXX-XX-XXXX)
+  sanitized = sanitized.replace(/\b\d{3}-\d{2}-\d{4}\b/g, '[SSN]');
+
+  // Redact phone numbers (various formats)
+  sanitized = sanitized.replace(/\b(\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g, '[PHONE]');
+
+  // Redact credit card numbers (16 digits)
+  sanitized = sanitized.replace(/\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/g, '[CREDIT_CARD]');
+
+  return sanitized;
+}
+
+/**
  * Polishes feedback text using HuggingFace AI
- * Implements graceful degradation with retry logic
+ * Implements graceful degradation with retry logic and PII redaction
  *
  * @param content - Original feedback text to polish
  * @param maxRetries - Maximum number of retry attempts (default: 3)
@@ -42,13 +61,23 @@ export async function polishFeedback(
     return content;
   }
 
-  // Construct the messages for the chat completion API
+  // Redact PII before sending to AI
+  const sanitizedContent = redactPII(content);
+  logger.info({
+    originalLength: content.length,
+    sanitizedLength: sanitizedContent.length,
+    redacted: sanitizedContent !== content
+  }, 'PII redaction applied before AI processing');
+
+  // Construct the messages for the chat completion API using sanitized content
   const messages = [
     {
       role: 'user',
-      content: `Improve the following feedback to be more constructive, professional, and actionable while maintaining its core message and intent:\n\n"${content}"\n\nImproved feedback:`
+      content: `Improve the following feedback to be more constructive, professional, and actionable while maintaining its core message and intent:\n\n"${sanitizedContent}"\n\nImproved feedback:`
     }
   ];
+
+  const startTime = Date.now();
 
   let lastError: Error | null = null;
 
@@ -94,7 +123,18 @@ export async function polishFeedback(
       if (result.choices && result.choices.length > 0) {
         const messageContent = result.choices[0].message?.content;
         if (messageContent && messageContent.trim().length > 0) {
-          logger.info({ attempt: attempt + 1 }, 'AI feedback polishing successful');
+          const duration = Date.now() - startTime;
+
+          // Log AI usage for cost tracking
+          logger.info({
+            attempt: attempt + 1,
+            duration,
+            inputLength: sanitizedContent.length,
+            outputLength: messageContent.length,
+            model: 'Qwen/Qwen2.5-7B-Instruct',
+            success: true,
+          }, 'AI feedback polishing successful');
+
           return messageContent.trim();
         }
       }

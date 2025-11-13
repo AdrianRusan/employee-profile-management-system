@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { logger } from '@/lib/logger';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -41,8 +42,7 @@ function LoginForm() {
       router.push(from);
     },
     onError: (error) => {
-      // Log error for debugging in CI logs
-      console.error('[LOGIN ERROR]:', error.message, error);
+      logger.error({ error: error.message }, 'Login error');
       setError('email', {
         type: 'manual',
         message: error.message,

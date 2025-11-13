@@ -144,7 +144,7 @@ export const userRouter = router({
             user.ssn = decrypt(user.ssn as string);
           } catch (error) {
             // Log decryption error but don't fail the request
-            console.error('Failed to decrypt SSN for user', user.id, error);
+            ctx.logger.error({ userId: user.id, error }, 'Failed to decrypt SSN for user');
             user.ssn = null; // Null out invalid SSN data
           }
         }

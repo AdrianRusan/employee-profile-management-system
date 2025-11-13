@@ -1,4 +1,8 @@
 import { PrismaClient } from '@prisma/client';
+import { validateEnv } from '@/lib/validate-env';
+
+// Validate environment variables on server startup
+validateEnv();
 
 declare global {
   var prisma: PrismaClient | undefined;
