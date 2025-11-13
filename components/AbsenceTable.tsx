@@ -1,6 +1,17 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -16,7 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { CalendarIcon, MoreHorizontal, Trash2 } from 'lucide-react';
+import { CalendarIcon, MoreHorizontal, Trash2, Check, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { AbsenceRequest, User } from '@prisma/client';
 
@@ -137,22 +148,70 @@ export function AbsenceTable({
                 <TableCell className="text-right">
                   {showApproval && absence.status === 'PENDING' ? (
                     <div className="flex justify-end gap-2">
-                      <Button
-                        size="sm"
-                        variant="default"
-                        onClick={() => onApprove?.(absence.id)}
-                        disabled={isUpdating}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => onReject?.(absence.id)}
-                        disabled={isUpdating}
-                      >
-                        Reject
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="default"
+                            disabled={isUpdating}
+                            aria-label={`Approve absence request for ${absence.user?.name || 'user'}`}
+                          >
+                            <Check className="h-4 w-4 mr-1" />
+                            Approve
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Approve Absence Request</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to approve this absence request from{' '}
+                              {format(new Date(absence.startDate), 'PPP')} to{' '}
+                              {format(new Date(absence.endDate), 'PPP')}?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => onApprove?.(absence.id)}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              Approve
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            disabled={isUpdating}
+                            aria-label={`Reject absence request for ${absence.user?.name || 'user'}`}
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            Reject
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Reject Absence Request</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to reject this absence request? The employee will be notified
+                              of this decision.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => onReject?.(absence.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Reject
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   ) : showActions && absence.status === 'PENDING' ? (
                     <DropdownMenu>

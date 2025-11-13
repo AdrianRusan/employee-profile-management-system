@@ -7,6 +7,7 @@ import { Users, MessageSquare, CalendarDays, Home, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc/Provider';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -95,7 +96,11 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
           });
         })()}
       </nav>
-      <div className="border-t border-gray-800 p-4">
+      <div className="border-t border-gray-800 p-4 space-y-2">
+        <div className="flex items-center justify-between px-3 py-2">
+          <span className="text-sm font-medium text-gray-300">Theme</span>
+          <ThemeToggle />
+        </div>
         <Button
           variant="ghost"
           className="w-full justify-start text-gray-300 hover:bg-gray-800 hover:text-white focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"

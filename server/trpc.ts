@@ -53,7 +53,28 @@ export async function createContext(opts: FetchCreateContextFnOptions): Promise<
   };
 }
 
-// Initialize tRPC with error formatting
+/**
+ * Get user-friendly error message based on error code
+ */
+function getUserFriendlyMessage(code: string, originalMessage: string): string {
+  const errorMessages: Record<string, string> = {
+    'UNAUTHORIZED': 'Please log in to continue',
+    'FORBIDDEN': 'You don\'t have permission to perform this action',
+    'NOT_FOUND': 'The requested item could not be found',
+    'BAD_REQUEST': 'Invalid request. Please check your input and try again',
+    'CONFLICT': 'This action conflicts with existing data',
+    'TOO_MANY_REQUESTS': 'Too many requests. Please wait a moment and try again',
+    'INTERNAL_SERVER_ERROR': 'Something went wrong on our end. Please try again later',
+    'TIMEOUT': 'The request took too long. Please try again',
+  };
+
+  // Use custom message if provided, otherwise use friendly default
+  return originalMessage && originalMessage !== code
+    ? originalMessage
+    : errorMessages[code] || 'An unexpected error occurred. Please try again';
+}
+
+// Initialize tRPC with enhanced error formatting
 const t = initTRPC.context<Context>().create({
   errorFormatter({ shape, error, ctx }) {
     // Log all errors with context
@@ -87,17 +108,37 @@ const t = initTRPC.context<Context>().create({
       });
     }
 
-    // Include Zod validation errors in response for client-side handling
+    // Get user-friendly message
+    const userFriendlyMessage = getUserFriendlyMessage(error.code, error.message);
+
+    // Include Zod validation errors and enhanced messaging
     return {
       ...shape,
+      message: userFriendlyMessage,
       data: {
         ...shape.data,
+        code: error.code,
         zodError:
           error.cause instanceof ZodError ? error.cause.flatten() : null,
+        hint: getErrorHint(error.code),
       },
     };
   },
 });
+
+/**
+ * Get helpful hint for users based on error code
+ */
+function getErrorHint(code: string): string | null {
+  const hints: Record<string, string> = {
+    'UNAUTHORIZED': 'Try refreshing the page or logging in again',
+    'FORBIDDEN': 'Contact your manager if you need access',
+    'TOO_MANY_REQUESTS': 'Wait a few moments before trying again',
+    'INTERNAL_SERVER_ERROR': 'If this persists, please contact support',
+  };
+
+  return hints[code] || null;
+}
 
 // Export reusable router and procedure helpers
 export const router = t.router;

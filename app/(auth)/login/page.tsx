@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { logger } from '@/lib/logger';
+import { toast } from 'sonner';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -35,6 +36,7 @@ function LoginForm() {
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: async () => {
+      toast.success('Login successful! Redirecting...');
       // Invalidate and refetch user data to update tRPC query cache
       await utils.auth.getCurrentUser.invalidate();
       // Wait for refetch to complete before navigation to ensure session is fully established
@@ -43,6 +45,7 @@ function LoginForm() {
     },
     onError: (error) => {
       logger.error({ error: error.message }, 'Login error');
+      toast.error(error.message || 'Login failed. Please try again.');
       setError('email', {
         type: 'manual',
         message: error.message,
