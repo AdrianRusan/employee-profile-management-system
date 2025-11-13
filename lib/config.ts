@@ -37,7 +37,8 @@ function getEnvBool(key: string, fallback: boolean): boolean {
  */
 export const sessionConfig = {
   /** Session cookie name - customize per environment to avoid conflicts */
-  cookieName: process.env.SESSION_COOKIE_NAME || 'employee_profile_session',
+  cookieName: process.env.SESSION_COOKIE_NAME ||
+    (process.env.NODE_ENV === 'production' ? '__Host-employee_profile_session' : 'employee_profile_session'),
 
   /** Session duration in seconds - default 7 days */
   maxAge: getEnvInt('SESSION_MAX_AGE', 60 * 60 * 24 * 7),

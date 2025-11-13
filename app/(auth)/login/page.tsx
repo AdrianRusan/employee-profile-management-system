@@ -10,18 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { isValidRole } from '@/lib/type-guards';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
-  role: z.enum(['EMPLOYEE', 'MANAGER', 'COWORKER']).optional(),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -31,8 +22,6 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const from = searchParams.get('from') || '/dashboard';
   const utils = trpc.useUtils();
-
-  const [selectedRole, setSelectedRole] = useState<'EMPLOYEE' | 'MANAGER' | 'COWORKER' | undefined>();
 
   const {
     register,
@@ -64,7 +53,6 @@ function LoginForm() {
   const onSubmit = (data: LoginFormData) => {
     loginMutation.mutate({
       email: data.email,
-      role: selectedRole,
     });
   };
 
@@ -93,30 +81,6 @@ function LoginForm() {
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="role">Role (Demo Feature)</Label>
-              <Select
-                value={selectedRole}
-                onValueChange={(value) => {
-                  if (isValidRole(value)) {
-                    setSelectedRole(value);
-                  }
-                }}
-              >
-                <SelectTrigger id="role">
-                  <SelectValue placeholder="Use profile default role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="MANAGER">Manager</SelectItem>
-                  <SelectItem value="EMPLOYEE">Employee</SelectItem>
-                  <SelectItem value="COWORKER">Coworker</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-gray-500">
-                Optional: Override your default role for demo purposes
-              </p>
-            </div>
-
             <Button
               type="submit"
               className="w-full"
@@ -133,6 +97,9 @@ function LoginForm() {
               <p>Employee: david@example.com</p>
               <p>Coworker: sarah@example.com</p>
             </div>
+            <p className="text-xs text-gray-500 mt-2">
+              You can switch roles after logging in using the role indicator.
+            </p>
           </div>
         </CardContent>
       </Card>

@@ -10,7 +10,6 @@ export const authRouter = router({
     .input(
       z.object({
         email: z.string().email('Invalid email format'),
-        role: z.enum(['EMPLOYEE', 'MANAGER', 'COWORKER']).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -36,19 +35,13 @@ export const authRouter = router({
         'User with this email'
       );
 
-      // For demo purposes, allow role override if provided
-      const roleToUse = input.role || user.role;
+      // Create session with user's database role
+      await createSession(user.id, user.email, user.role);
 
-      // Create session
-      await createSession(user.id, user.email, roleToUse);
+      ctx.logger.info({ userId: user.id, role: user.role }, 'Login successful');
+      logAuthEvent('login_success', user.id, { email: input.email, role: user.role });
 
-      ctx.logger.info({ userId: user.id, role: roleToUse }, 'Login successful');
-      logAuthEvent('login_success', user.id, { email: input.email, role: roleToUse });
-
-      return {
-        ...user,
-        role: roleToUse,
-      };
+      return user;
     }),
 
   // Logout procedure
