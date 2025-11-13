@@ -16,8 +16,45 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Employee Profile Management System",
-  description: "Manage employee profiles with role-based access control",
+  title: {
+    default: "Employee Profile Management System",
+    template: "%s | EmployeeHub",
+  },
+  description: "Streamline your HR processes with secure, role-based employee management. Handle profiles, feedback, and absence requests all in one place.",
+  keywords: ["employee management", "HR software", "profile management", "feedback system", "absence tracking"],
+  authors: [{ name: "EmployeeHub" }],
+  creator: "EmployeeHub",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "/",
+    title: "Employee Profile Management System",
+    description: "Streamline your HR processes with secure, role-based employee management.",
+    siteName: "EmployeeHub",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Employee Profile Management System",
+    description: "Streamline your HR processes with secure, role-based employee management.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({

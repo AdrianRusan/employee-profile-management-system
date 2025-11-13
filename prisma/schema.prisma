@@ -36,6 +36,7 @@ model User {
   @@index([department, role])
   @@index([performanceRating])
   @@index([deletedAt])
+  @@index([deletedAt, createdAt(sort: Desc)])
 }
 
 model Feedback {
@@ -58,6 +59,7 @@ model Feedback {
   @@index([receiverId, isPolished])
   @@index([deletedAt])
   @@index([receiverId, createdAt(sort: Desc), deletedAt])
+  @@index([deletedAt, createdAt(sort: Desc)])
 }
 
 model AbsenceRequest {
@@ -79,6 +81,7 @@ model AbsenceRequest {
   @@index([status, startDate])
   @@index([deletedAt])
   @@index([userId, deletedAt])
+  @@index([deletedAt, createdAt(sort: Desc)])
 }
 
 enum Role {
