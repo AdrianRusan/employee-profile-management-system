@@ -6,19 +6,18 @@ import {
   deleteFeedbackSchema,
   getFeedbackForUserSchema,
 } from '@/lib/validations/feedback';
-import { Permissions, assertPermission } from '@/lib/permissions';
-import { polishFeedback } from '@/lib/ai/huggingface';
-import { USER_FEEDBACK_SELECT } from '@/lib/prisma/selects';
-import { findOrThrow } from '@/lib/errors';
+import { FeedbackService } from '@/lib/services/feedbackService';
 
 /**
  * Feedback router for peer feedback management
- * Handles creating, viewing, polishing, and deleting feedback
+ * Delegates all business logic to FeedbackService (Clean Architecture)
+ *
+ * REFACTORED: Reduced from 293 lines to ~100 lines by extracting business logic
+ * to the service layer. Each endpoint follows the thin controller pattern.
  */
 export const feedbackRouter = router({
   /**
    * Create new feedback entry
-   * Any authenticated user can give feedback to any other user
    */
   create: protectedProcedure
     .input(
@@ -28,266 +27,63 @@ export const feedbackRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { receiverId, content, polishedContent, isPolished } = input;
-
-      ctx.logger.info({
-        receiverId,
-        isPolished,
-        contentLength: content.length,
-      }, 'Creating feedback');
-
-      // Verify receiver exists and is not deleted
-      void await findOrThrow(
-        ctx.prisma.user.findFirst({
-          where: {
-            id: receiverId,
-            deletedAt: null
-          },
-        }),
-        'Receiver',
-        receiverId
-      );
-
-      // Create feedback entry
-      const feedback = await ctx.prisma.feedback.create({
-        data: {
-          content,
-          polishedContent: polishedContent || null,
-          isPolished,
-          giverId: ctx.session.userId,
-          receiverId,
-        },
-        include: {
-          giver: {
-            select: USER_FEEDBACK_SELECT,
-          },
-          receiver: {
-            select: USER_FEEDBACK_SELECT,
-          },
-        },
-      });
-
-      ctx.logger.info({
-        feedbackId: feedback.id,
-        receiverId,
-        isPolished,
-      }, 'Feedback created successfully');
-
-      return feedback;
+      const feedbackService = new FeedbackService(ctx.prisma, ctx.logger);
+      return feedbackService.submitFeedback(ctx.session, input);
     }),
 
   /**
    * Get all feedback for a specific user
-   * Visible to managers, feedback receiver, and feedback givers
    */
   getForUser: protectedProcedure
     .input(getFeedbackForUserSchema)
     .query(async ({ ctx, input }) => {
-      const { userId } = input;
-
-      // Verify user exists and is not deleted
-      await findOrThrow(
-        ctx.prisma.user.findFirst({
-          where: {
-            id: userId,
-            deletedAt: null
-          },
-        }),
-        'User',
-        userId
-      );
-
-      // Fetch all feedback for the user (exclude soft-deleted feedback)
-      const allFeedback = await ctx.prisma.feedback.findMany({
-        where: {
-          receiverId: userId,
-          deletedAt: null
-        },
-        include: {
-          giver: {
-            select: USER_FEEDBACK_SELECT,
-          },
-          receiver: {
-            select: USER_FEEDBACK_SELECT,
-          },
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
-
-      // Filter feedback based on centralized permissions
-      const filteredFeedback = allFeedback.filter((feedback) => {
-        return Permissions.feedback.view(ctx.session, feedback);
-      });
-
-      return filteredFeedback;
+      const feedbackService = new FeedbackService(ctx.prisma, ctx.logger);
+      return feedbackService.listFeedbackWithPermissions(ctx.session, input.userId);
     }),
 
   /**
    * Get feedback given by current user
-   * Shows all feedback the current user has given to others
    */
   getGiven: protectedProcedure.query(async ({ ctx }) => {
-    const feedback = await ctx.prisma.feedback.findMany({
-      where: {
-        giverId: ctx.session.userId,
-        deletedAt: null
-      },
-      include: {
-        receiver: {
-          select: USER_FEEDBACK_SELECT,
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    return feedback;
+    const feedbackService = new FeedbackService(ctx.prisma, ctx.logger);
+    return feedbackService.getFeedbackGiven(ctx.session);
   }),
 
   /**
    * Get feedback received by current user
-   * Shows all feedback the current user has received
    */
   getReceived: protectedProcedure.query(async ({ ctx }) => {
-    const feedback = await ctx.prisma.feedback.findMany({
-      where: {
-        receiverId: ctx.session.userId,
-        deletedAt: null
-      },
-      include: {
-        giver: {
-          select: USER_FEEDBACK_SELECT,
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    return feedback;
+    const feedbackService = new FeedbackService(ctx.prisma, ctx.logger);
+    return feedbackService.getFeedbackReceived(ctx.session);
   }),
 
   /**
    * Polish feedback content using AI
-   * Returns the polished version without saving to database
    */
   polishWithAI: protectedProcedure
     .input(polishFeedbackSchema)
     .mutation(async ({ ctx, input }) => {
-      const { content } = input;
-
-      ctx.logger.info({
-        contentLength: content.length,
-      }, 'Polishing feedback with AI');
-
-      try {
-        // Call HuggingFace API to polish the feedback
-        const polished = await polishFeedback(content);
-
-        ctx.logger.info({
-          originalLength: content.length,
-          polishedLength: polished.length,
-        }, 'Feedback polished successfully');
-
-        return {
-          original: content,
-          polished,
-          success: true,
-        };
-      } catch (error) {
-        ctx.logger.error({ error, contentLength: content.length }, 'Failed to polish feedback with AI');
-
-        // Return original content as fallback
-        return {
-          original: content,
-          polished: content,
-          success: false,
-          error: 'Failed to polish feedback. Please try again.',
-        };
-      }
+      const feedbackService = new FeedbackService(ctx.prisma, ctx.logger);
+      return feedbackService.processFeedbackWithAI(input);
     }),
 
   /**
    * Delete feedback entry
-   * Can be deleted by the feedback giver or by managers
    */
   delete: protectedProcedure
     .input(deleteFeedbackSchema)
     .mutation(async ({ ctx, input }) => {
-      const { id } = input;
-
-      ctx.logger.info({ feedbackId: id }, 'Deleting feedback');
-
-      // Find the feedback entry
-      const feedback = await findOrThrow(
-        ctx.prisma.feedback.findUnique({
-          where: { id },
-        }),
-        'Feedback',
-        id
-      );
-
-      // Check if user has permission to delete this feedback using centralized permissions
-      assertPermission(
-        Permissions.feedback.delete(ctx.session, feedback),
-        'You do not have permission to delete this feedback'
-      );
-
-      // Delete the feedback
-      await ctx.prisma.feedback.delete({
-        where: { id },
-      });
-
-      ctx.logger.info({
-        feedbackId: id,
-        giverId: feedback.giverId,
-        receiverId: feedback.receiverId,
-      }, 'Feedback deleted successfully');
-
-      return { success: true };
+      const feedbackService = new FeedbackService(ctx.prisma, ctx.logger);
+      return feedbackService.deleteFeedback(ctx.session, input.id);
     }),
 
   /**
    * Get feedback statistics for a user
-   * Shows counts of feedback given and received
    */
   getStats: protectedProcedure
     .input(z.object({ userId: z.string().cuid() }))
     .query(async ({ ctx, input }) => {
-      const { userId } = input;
-
-      // Count feedback given (exclude soft-deleted)
-      const givenCount = await ctx.prisma.feedback.count({
-        where: {
-          giverId: userId,
-          deletedAt: null
-        },
-      });
-
-      // Count feedback received (exclude soft-deleted)
-      const receivedCount = await ctx.prisma.feedback.count({
-        where: {
-          receiverId: userId,
-          deletedAt: null
-        },
-      });
-
-      // Count polished feedback (exclude soft-deleted)
-      const polishedCount = await ctx.prisma.feedback.count({
-        where: {
-          receiverId: userId,
-          isPolished: true,
-          deletedAt: null
-        },
-      });
-
-      return {
-        given: givenCount,
-        received: receivedCount,
-        polished: polishedCount,
-      };
+      const feedbackService = new FeedbackService(ctx.prisma, ctx.logger);
+      return feedbackService.getFeedbackStats(input.userId);
     }),
 });
