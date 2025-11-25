@@ -119,7 +119,7 @@ services:
           - /api/users
 
   - name: product-service
-    url: http://product-service:3001
+    url: http://product-service:3000
     routes:
       - name: product-route
         paths:
