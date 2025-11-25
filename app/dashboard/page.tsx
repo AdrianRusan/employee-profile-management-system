@@ -1,27 +1,35 @@
 'use client';
 
+import { Suspense, lazy, useState } from 'react';
 import { trpc } from '@/lib/trpc/Provider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FadeIn } from '@/components/FadeIn';
 import { QuickActions } from '@/components/dashboard/QuickActions';
-import { ActivityFeed } from '@/components/dashboard/ActivityFeed';
 import { MetricsCard } from '@/components/dashboard/MetricsCard';
-import { FeedbackChart } from '@/components/dashboard/FeedbackChart';
-import { AbsenceChart } from '@/components/dashboard/AbsenceChart';
-import { UpcomingAbsences } from '@/components/dashboard/UpcomingAbsences';
+import { DashboardCustomization, useDashboardPreferences } from '@/components/dashboard/DashboardCustomization';
+
+// Lazy load heavy components for better initial page load
+const ActivityFeed = lazy(() => import('@/components/dashboard/ActivityFeed').then(mod => ({ default: mod.ActivityFeed })));
+const FeedbackChart = lazy(() => import('@/components/dashboard/FeedbackChart').then(mod => ({ default: mod.FeedbackChart })));
+const AbsenceChart = lazy(() => import('@/components/dashboard/AbsenceChart').then(mod => ({ default: mod.AbsenceChart })));
+const UpcomingAbsences = lazy(() => import('@/components/dashboard/UpcomingAbsences').then(mod => ({ default: mod.UpcomingAbsences })));
 
 export default function DashboardPage() {
   const { data: currentUser, isLoading, isError, error } = trpc.auth.getCurrentUser.useQuery();
+  const preferences = useDashboardPreferences();
 
   return (
     <div className="space-y-6">
       <FadeIn direction="down">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Welcome back! Here&apos;s an overview of your activity and quick access to key features
-          </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Welcome back! Here&apos;s an overview of your activity and quick access to key features
+            </p>
+          </div>
+          <DashboardCustomization />
         </div>
       </FadeIn>
 
@@ -41,7 +49,7 @@ export default function DashboardPage() {
                   <Skeleton className="h-4 w-40" />
                 </div>
               ) : isError ? (
-                <p className="text-sm text-red-600">
+                <p className="text-sm text-destructive">
                   Failed to load profile{error?.message ? `: ${error.message}` : ''}
                 </p>
               ) : (
@@ -74,7 +82,7 @@ export default function DashboardPage() {
           ) : isError ? (
             <Card>
               <CardContent className="pt-6">
-                <p className="text-sm text-red-600">
+                <p className="text-sm text-destructive">
                   Failed to load quick actions
                 </p>
               </CardContent>
@@ -92,29 +100,100 @@ export default function DashboardPage() {
       </div>
 
       {/* Key Metrics Section */}
-      <FadeIn delay={0.3} direction="up">
-        <MetricsCard />
-      </FadeIn>
+      {preferences.showMetrics && (
+        <FadeIn delay={0.3} direction="up">
+          <MetricsCard />
+        </FadeIn>
+      )}
 
       {/* Data Visualization Section */}
-      <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <FadeIn delay={0.4} direction="up">
-          <FeedbackChart />
-        </FadeIn>
+      {(preferences.showFeedbackChart || preferences.showAbsenceChart || preferences.showUpcomingAbsences) && (
+        <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {preferences.showFeedbackChart && (
+            <FadeIn delay={0.4} direction="up">
+              <Suspense fallback={
+                <Card>
+                  <CardHeader>
+                    <Skeleton className="h-5 w-32" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-48 w-full" />
+                  </CardContent>
+                </Card>
+              }>
+                <FeedbackChart />
+              </Suspense>
+            </FadeIn>
+          )}
 
-        <FadeIn delay={0.5} direction="up">
-          <AbsenceChart />
-        </FadeIn>
+          {preferences.showAbsenceChart && (
+            <FadeIn delay={0.5} direction="up">
+              <Suspense fallback={
+                <Card>
+                  <CardHeader>
+                    <Skeleton className="h-5 w-32" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-48 w-full" />
+                  </CardContent>
+                </Card>
+              }>
+                <AbsenceChart />
+              </Suspense>
+            </FadeIn>
+          )}
 
-        <FadeIn delay={0.6} direction="up">
-          <UpcomingAbsences />
-        </FadeIn>
-      </div>
+          {preferences.showUpcomingAbsences && (
+            <FadeIn delay={0.6} direction="up">
+              <Suspense fallback={
+                <Card>
+                  <CardHeader>
+                    <Skeleton className="h-5 w-40" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <Skeleton className="h-16 w-full" />
+                      <Skeleton className="h-16 w-full" />
+                      <Skeleton className="h-16 w-full" />
+                    </div>
+                  </CardContent>
+                </Card>
+              }>
+                <UpcomingAbsences />
+              </Suspense>
+            </FadeIn>
+          )}
+        </div>
+      )}
 
       {/* Recent Activity Section */}
-      <FadeIn delay={0.7} direction="up">
-        <ActivityFeed limit={10} />
-      </FadeIn>
+      {preferences.showActivityFeed && (
+        <FadeIn delay={0.7} direction="up">
+          <Suspense fallback={
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-4 w-64" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-1/2" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          }>
+            <ActivityFeed limit={10} />
+          </Suspense>
+        </FadeIn>
+      )}
     </div>
   );
 }

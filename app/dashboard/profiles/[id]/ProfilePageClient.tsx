@@ -33,7 +33,7 @@ export function ProfilePageClient({ user }: ProfilePageClientProps) {
   // Get current user session
   const { data: session } = trpc.auth.getCurrentUser.useQuery();
 
-  if (!session) {
+  if (!session || !user) {
     return <div>Loading...</div>;
   }
 

@@ -3,7 +3,7 @@ import type { Logger } from 'pino';
 import { USER_FEEDBACK_SELECT } from '@/lib/prisma/selects';
 import { polishFeedback } from '@/lib/ai/huggingface';
 import { AppErrors, findOrThrow } from '@/lib/errors';
-import { Permissions, type SessionUser } from '@/lib/permissions';
+import { Permissions, type PermissionUser } from '@/lib/permissions';
 
 /**
  * Input types for feedback service methods
@@ -45,7 +45,7 @@ export class FeedbackService {
    * @param input - Feedback data
    * @returns Created feedback entry
    */
-  async submitFeedback(session: SessionUser, input: CreateFeedbackInput) {
+  async submitFeedback(session: PermissionUser, input: CreateFeedbackInput) {
     const { receiverId, content, polishedContent, isPolished } = input;
 
     this.logger?.info({
@@ -152,7 +152,7 @@ export class FeedbackService {
    * @param userId - User ID to get feedback for
    * @returns Filtered list of feedback
    */
-  async listFeedbackWithPermissions(session: SessionUser, userId: string) {
+  async listFeedbackWithPermissions(session: PermissionUser, userId: string) {
     // Verify user exists and is not deleted
     await findOrThrow(
       this.prisma.user.findFirst({
@@ -197,7 +197,7 @@ export class FeedbackService {
    * @param session - Current user session
    * @returns List of feedback given by user
    */
-  async getFeedbackGiven(session: SessionUser) {
+  async getFeedbackGiven(session: PermissionUser) {
     return this.prisma.feedback.findMany({
       where: {
         giverId: session.id,
@@ -219,7 +219,7 @@ export class FeedbackService {
    * @param session - Current user session
    * @returns List of feedback received by user
    */
-  async getFeedbackReceived(session: SessionUser) {
+  async getFeedbackReceived(session: PermissionUser) {
     return this.prisma.feedback.findMany({
       where: {
         receiverId: session.id,
@@ -242,7 +242,7 @@ export class FeedbackService {
    * @param feedbackId - Feedback ID to delete
    * @returns Success message
    */
-  async deleteFeedback(session: SessionUser, feedbackId: string) {
+  async deleteFeedback(session: PermissionUser, feedbackId: string) {
     this.logger?.info({ feedbackId }, 'Deleting feedback');
 
     // Find the feedback entry

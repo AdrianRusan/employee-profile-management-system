@@ -38,8 +38,8 @@ export function MetricsCard() {
     return (
       <Card>
         <CardContent className="pt-6">
-          <div className="rounded-lg bg-red-50 p-4">
-            <p className="text-sm text-red-800">
+          <div className="rounded-lg bg-destructive/10 p-4">
+            <p className="text-sm text-destructive">
               Failed to load metrics. Please try again later.
             </p>
           </div>
@@ -59,7 +59,7 @@ export function MetricsCard() {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-gray-600" />
+          <TrendingUp className="h-5 w-5 text-muted-foreground" />
           <CardTitle>Key Metrics</CardTitle>
         </div>
         <CardDescription>
@@ -98,7 +98,7 @@ export function MetricsCard() {
           />
 
           {/* Manager-specific metrics */}
-          {isManager && 'teamSize' in metrics && (
+          {isManager && metrics.teamSize !== undefined && (
             <>
               <MetricItem
                 icon={<Users className="h-5 w-5 text-indigo-500" />}
@@ -109,15 +109,15 @@ export function MetricsCard() {
               <MetricItem
                 icon={<Clock className="h-5 w-5 text-orange-500" />}
                 label="Pending Approvals"
-                value={metrics.pendingApprovals}
-                highlighted={metrics.pendingApprovals > 0}
+                value={metrics.pendingApprovals ?? 0}
+                highlighted={(metrics.pendingApprovals ?? 0) > 0}
               />
 
-              {metrics.avgPerformance !== null && (
+              {metrics.avgPerformance != null && (
                 <MetricItem
                   icon={<Star className="h-5 w-5 text-yellow-400" />}
                   label="Avg Performance"
-                  value={metrics.avgPerformance}
+                  value={Number(metrics.avgPerformance?.toFixed(1))}
                   subtitle="Team average"
                 />
               )}
@@ -148,14 +148,14 @@ function MetricItem({
   return (
     <div
       className={`flex items-start gap-3 p-3 rounded-lg border ${
-        highlighted ? 'bg-yellow-50 border-yellow-200' : 'bg-gray-50 border-gray-200'
+        highlighted ? 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-800' : 'bg-muted/50 border-border'
       }`}
     >
       <div className="flex-shrink-0 mt-1">{icon}</div>
       <div className="flex-1 min-w-0">
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
-        <p className="text-xs font-medium text-gray-600 mt-1">{label}</p>
-        {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
+        <p className="text-2xl font-bold text-foreground">{value}</p>
+        <p className="text-xs font-medium text-muted-foreground mt-1">{label}</p>
+        {subtitle && <p className="text-xs text-muted-foreground/80 mt-0.5">{subtitle}</p>}
       </div>
     </div>
   );

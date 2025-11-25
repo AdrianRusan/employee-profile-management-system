@@ -52,8 +52,6 @@ function LoginForm() {
       router.push(from);
     },
     onError: (error) => {
-      // Log error for debugging in CI logs
-      console.error('[LOGIN ERROR]:', error.message, error);
       setError('email', {
         type: 'manual',
         message: error.message,
@@ -69,7 +67,7 @@ function LoginForm() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-muted/50 px-4 py-12">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl">Employee Profile System</CardTitle>
@@ -89,7 +87,7 @@ function LoginForm() {
                 aria-invalid={errors.email ? 'true' : 'false'}
               />
               {errors.email && (
-                <p className="text-sm text-red-600">{errors.email.message}</p>
+                <p className="text-sm text-destructive">{errors.email.message}</p>
               )}
             </div>
 
@@ -112,7 +110,7 @@ function LoginForm() {
                   <SelectItem value="COWORKER">Coworker</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Optional: Override your default role for demo purposes
               </p>
             </div>
@@ -127,8 +125,8 @@ function LoginForm() {
           </form>
 
           <div className="mt-6 space-y-2 border-t pt-6">
-            <p className="text-sm font-medium text-gray-700">Demo Accounts:</p>
-            <div className="space-y-1 text-xs text-gray-600">
+            <p className="text-sm font-medium text-foreground">Demo Accounts:</p>
+            <div className="space-y-1 text-xs text-muted-foreground">
               <p>Manager: emily@example.com</p>
               <p>Employee: david@example.com</p>
               <p>Coworker: sarah@example.com</p>
@@ -143,8 +141,11 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <p className="text-gray-600">Loading...</p>
+      <div className="flex min-h-screen items-center justify-center bg-muted/50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
       </div>
     }>
       <LoginForm />

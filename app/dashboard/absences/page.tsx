@@ -100,7 +100,7 @@ export default function AbsencesPage() {
     <div className="container mx-auto py-8 space-y-8">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Absence Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Absence Management</h1>
           <p className="text-muted-foreground">
             Manage your time-off requests and view absence calendar
           </p>
@@ -116,25 +116,25 @@ export default function AbsencesPage() {
           <Card>
             <CardHeader className="pb-3">
               <CardDescription>Total Requests</CardDescription>
-              <CardTitle className="text-3xl">{stats.total}</CardTitle>
+              <CardTitle className="text-3xl">{stats.totalRequests}</CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="pb-3">
               <CardDescription>Pending</CardDescription>
-              <CardTitle className="text-3xl text-yellow-600">{stats.pending}</CardTitle>
+              <CardTitle className="text-3xl text-yellow-600">{stats.pendingRequests}</CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="pb-3">
-              <CardDescription>Approved</CardDescription>
-              <CardTitle className="text-3xl text-green-600">{stats.approved}</CardTitle>
+              <CardDescription>Approved Days</CardDescription>
+              <CardTitle className="text-3xl text-green-600">{stats.approvedDays}</CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="pb-3">
               <CardDescription>Rejected</CardDescription>
-              <CardTitle className="text-3xl text-red-600">{stats.rejected}</CardTitle>
+              <CardTitle className="text-3xl text-red-600">{stats.rejectedRequests}</CardTitle>
             </CardHeader>
           </Card>
         </div>
@@ -201,7 +201,7 @@ export default function AbsencesPage() {
                   </div>
                 ) : (
                   <AbsenceTable
-                    absences={allAbsences?.absenceRequests}
+                    absences={allAbsences?.absences}
                     showUser
                     showApproval
                     showActions={false}

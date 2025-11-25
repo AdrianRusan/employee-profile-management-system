@@ -19,12 +19,13 @@ import { Sparkles, ChevronDown, ChevronUp, MessageSquare, Send } from 'lucide-re
 import { formatDistanceToNow } from 'date-fns';
 import { Feedback, User } from '@prisma/client';
 
-type FeedbackWithUser = Omit<Feedback, 'createdAt' | 'updatedAt' | 'deletedAt'> & {
+type FeedbackWithUser = Omit<Feedback, 'createdAt' | 'updatedAt' | 'deletedAt' | 'polishedContent'> & {
   giver?: Partial<User> | null;
   receiver?: Partial<User> | null;
   createdAt: string | Date;
   updatedAt: string | Date;
-  deletedAt: string | Date | null;
+  deletedAt?: string;
+  polishedContent?: string;
 };
 
 /**
@@ -219,7 +220,7 @@ export default function FeedbackPage() {
   return (
     <div className="container max-w-4xl py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Feedback</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-2">Feedback</h1>
         <p className="text-muted-foreground">
           View and manage feedback you&apos;ve received and given
         </p>
@@ -235,7 +236,7 @@ export default function FeedbackPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.received}</div>
+              <div className="text-2xl font-bold">{stats.totalReceived}</div>
             </CardContent>
           </Card>
 
@@ -246,7 +247,7 @@ export default function FeedbackPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.given}</div>
+              <div className="text-2xl font-bold">{stats.totalGiven}</div>
             </CardContent>
           </Card>
 
@@ -258,7 +259,7 @@ export default function FeedbackPage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
-                <div className="text-2xl font-bold">{stats.polished}</div>
+                <div className="text-2xl font-bold">{stats.polishedCount}</div>
                 <Sparkles className="h-5 w-5 text-primary" />
               </div>
             </CardContent>

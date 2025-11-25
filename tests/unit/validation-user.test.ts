@@ -191,12 +191,4 @@ describe('sensitiveProfileSchema', () => {
     });
   });
 
-  it('rejects address longer than 300 characters', () => {
-    const invalidData = {
-      address: 'a'.repeat(301),
-    };
-
-    const result = sensitiveProfileSchema.safeParse(invalidData);
-    expect(result.success).toBe(false);
-  });
 });

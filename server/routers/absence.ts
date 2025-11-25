@@ -5,14 +5,15 @@ import {
   updateAbsenceStatusSchema,
 } from '@/lib/validations/absence';
 import { paginationSchema } from '@/lib/pagination';
-import { AbsenceService } from '@/lib/services/absenceService';
+import { container } from '@/src/infrastructure/di/container';
+import { AbsenceStatus } from '@/src/domain/entities/Absence';
 
 /**
  * Absence router for time-off request management
- * Delegates all business logic to AbsenceService (Clean Architecture)
+ * Uses Clean Architecture with DI Container and Use Cases
  *
- * REFACTORED: Reduced from 478 lines to ~150 lines by extracting business logic
- * to the service layer. Each endpoint follows the thin controller pattern.
+ * REFACTORED: Now uses dependency injection container for all operations.
+ * Each endpoint delegates to a specific use case through the container.
  */
 export const absenceRouter = router({
   /**
@@ -21,8 +22,12 @@ export const absenceRouter = router({
   create: protectedProcedure
     .input(absenceRequestSchema)
     .mutation(async ({ ctx, input }) => {
-      const absenceService = new AbsenceService(ctx.prisma, ctx.logger);
-      return absenceService.processAbsenceRequest(ctx.session, input);
+      return container.createAbsenceUseCase.execute({
+        userId: ctx.session.userId,
+        startDate: input.startDate,
+        endDate: input.endDate,
+        reason: input.reason,
+      });
     }),
 
   /**
@@ -31,16 +36,21 @@ export const absenceRouter = router({
   getForUser: protectedProcedure
     .input(z.object({ userId: z.string().cuid() }))
     .query(async ({ ctx, input }) => {
-      const absenceService = new AbsenceService(ctx.prisma, ctx.logger);
-      return absenceService.getAbsencesForUser(ctx.session, input.userId);
+      // Get absences for the specified user
+      const result = await container.getAbsencesUseCase.execute({
+        userId: input.userId,
+      });
+      return result.absences;
     }),
 
   /**
    * Get current user's absence requests
    */
   getMy: protectedProcedure.query(async ({ ctx }) => {
-    const absenceService = new AbsenceService(ctx.prisma, ctx.logger);
-    return absenceService.getMyAbsences(ctx.session);
+    const result = await container.getAbsencesUseCase.execute({
+      userId: ctx.session.userId,
+    });
+    return result.absences;
   }),
 
   /**
@@ -53,8 +63,11 @@ export const absenceRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const absenceService = new AbsenceService(ctx.prisma, ctx.logger);
-      return absenceService.getAllAbsences(ctx.session, input);
+      return container.getAbsencesUseCase.execute({
+        status: input.status ? AbsenceStatus[input.status] : undefined,
+        skip: input.skip,
+        take: input.limit,
+      });
     }),
 
   /**
@@ -63,8 +76,18 @@ export const absenceRouter = router({
   updateStatus: protectedProcedure
     .input(updateAbsenceStatusSchema)
     .mutation(async ({ ctx, input }) => {
-      const absenceService = new AbsenceService(ctx.prisma, ctx.logger);
-      return absenceService.updateAbsenceStatus(ctx.session, input.id, input.status);
+      if (input.status === 'APPROVED') {
+        return container.approveAbsenceUseCase.execute({
+          absenceId: input.id,
+          approverId: ctx.session.userId,
+        });
+      } else if (input.status === 'REJECTED') {
+        return container.rejectAbsenceUseCase.execute({
+          absenceId: input.id,
+          rejectorId: ctx.session.userId,
+        });
+      }
+      throw new Error('Invalid status');
     }),
 
   /**
@@ -73,23 +96,36 @@ export const absenceRouter = router({
   delete: protectedProcedure
     .input(z.object({ id: z.string().cuid() }))
     .mutation(async ({ ctx, input }) => {
-      const absenceService = new AbsenceService(ctx.prisma, ctx.logger);
-      return absenceService.deleteAbsence(ctx.session, input.id);
+      await container.deleteAbsenceUseCase.execute({
+        absenceId: input.id,
+        userId: ctx.session.userId,
+      });
+      return { success: true };
     }),
 
   /**
    * Get absence statistics for current user
    */
   getMyStats: protectedProcedure.query(async ({ ctx }) => {
-    const absenceService = new AbsenceService(ctx.prisma, ctx.logger);
-    return absenceService.getAbsenceStats(ctx.session.userId);
+    return container.getAbsenceStatisticsUseCase.execute({
+      userId: ctx.session.userId,
+    });
   }),
 
   /**
    * Get all upcoming absences (for calendar view)
    */
   getUpcoming: protectedProcedure.query(async ({ ctx }) => {
-    const absenceService = new AbsenceService(ctx.prisma, ctx.logger);
-    return absenceService.getUpcomingAbsences();
+    const today = new Date();
+    const result = await container.getAbsencesUseCase.execute({
+      status: AbsenceStatus.APPROVED,
+    });
+
+    // Filter for upcoming absences (starting from today)
+    const upcomingAbsences = result.absences.filter(
+      (absence) => new Date(absence.startDate) >= today
+    );
+
+    return upcomingAbsences.slice(0, 10);
   }),
 });

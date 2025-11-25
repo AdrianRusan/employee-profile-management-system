@@ -6,18 +6,14 @@ import {
   profileIdSchema,
   profileListSchema
 } from '@/lib/validations/user';
-import { UserService } from '@/lib/services/userService';
+import { container } from '@/src/infrastructure/di/container';
 
 /**
  * User router for profile management
- * Delegates all business logic to UserService (Clean Architecture)
+ * Uses Clean Architecture with DI Container and Use Cases
  *
- * REFACTORED: Reduced from 393 lines to ~100 lines by extracting business logic
- * to the service layer. Each endpoint now follows the thin controller pattern:
- * 1. Validate input (handled by tRPC)
- * 2. Instantiate service
- * 3. Delegate to service method
- * 4. Return result
+ * REFACTORED: Now uses dependency injection container for all operations.
+ * Each endpoint delegates to a specific use case through the container.
  */
 export const userRouter = router({
   /**
@@ -26,8 +22,11 @@ export const userRouter = router({
   getById: protectedProcedure
     .input(profileIdSchema)
     .query(async ({ ctx, input }) => {
-      const userService = new UserService(ctx.prisma, ctx.logger);
-      return userService.getUserById(ctx.session, input.id);
+      return container.getUserUseCase.execute({
+        userId: input.id,
+        requesterId: ctx.session.userId,
+        includeSensitive: ctx.session.role === 'MANAGER',
+      });
     }),
 
   /**
@@ -36,8 +35,12 @@ export const userRouter = router({
   getAll: protectedProcedure
     .input(profileListSchema)
     .query(async ({ ctx, input }) => {
-      const userService = new UserService(ctx.prisma, ctx.logger);
-      return userService.listUsers(ctx.session, input);
+      return container.listUsersUseCase.execute({
+        requesterId: ctx.session.userId,
+        department: input.department,
+        skip: input.skip,
+        take: input.limit,
+      });
     }),
 
   /**
@@ -51,8 +54,22 @@ export const userRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const userService = new UserService(ctx.prisma, ctx.logger);
-      return userService.updateUser(ctx.session, input.id, input.data);
+      return container.updateUserProfileUseCase.execute({
+        userId: input.id,
+        requesterId: ctx.session.userId,
+        name: input.data.name,
+        department: input.data.department,
+        position: input.data.position,
+        title: input.data.title ?? undefined,
+        bio: input.data.bio ?? undefined,
+        avatar: input.data.avatar ?? undefined,
+        phoneNumber: input.data.phoneNumber,
+        address: input.data.address,
+        city: input.data.city,
+        state: input.data.state,
+        zipCode: input.data.zipCode,
+        country: input.data.country,
+      });
     }),
 
   /**
@@ -66,16 +83,27 @@ export const userRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const userService = new UserService(ctx.prisma, ctx.logger);
-      return userService.updateSensitiveFields(ctx.session, input.id, input.data);
+      return container.updateSensitiveFieldsUseCase.execute({
+        userId: input.id,
+        requesterId: ctx.session.userId,
+        salary: input.data.salary,
+        ssn: input.data.ssn,
+        dateOfBirth: input.data.dateOfBirth,
+        performanceRating: input.data.performanceRating,
+      });
     }),
 
   /**
    * Get list of unique departments
    */
   getDepartments: protectedProcedure.query(async ({ ctx }) => {
-    const userService = new UserService(ctx.prisma, ctx.logger);
-    return userService.getDepartments();
+    const result = await container.listUsersUseCase.execute({
+      requesterId: ctx.session.userId,
+    });
+
+    // Extract unique departments from users
+    const departments = [...new Set(result.users.map(u => u.department).filter(Boolean))];
+    return departments;
   }),
 
   /**
@@ -84,18 +112,11 @@ export const userRouter = router({
   softDelete: managerProcedure
     .input(z.object({ id: z.string().cuid() }))
     .mutation(async ({ ctx, input }) => {
-      const userService = new UserService(ctx.prisma, ctx.logger);
-      return userService.softDeleteUser(ctx.session, input.id);
-    }),
-
-  /**
-   * Hard delete user account (irreversible)
-   */
-  hardDelete: managerProcedure
-    .input(z.object({ id: z.string().cuid() }))
-    .mutation(async ({ ctx, input }) => {
-      const userService = new UserService(ctx.prisma, ctx.logger);
-      return userService.hardDeleteUser(ctx.session, input.id);
+      await container.deleteUserUseCase.execute({
+        userId: input.id,
+        requesterId: ctx.session.userId,
+      });
+      return { success: true };
     }),
 
   /**
@@ -104,7 +125,9 @@ export const userRouter = router({
   restore: managerProcedure
     .input(z.object({ id: z.string().cuid() }))
     .mutation(async ({ ctx, input }) => {
-      const userService = new UserService(ctx.prisma, ctx.logger);
-      return userService.restoreUser(ctx.session, input.id);
+      return container.restoreUserUseCase.execute({
+        userId: input.id,
+        requesterId: ctx.session.userId,
+      });
     }),
 });

@@ -5,7 +5,7 @@ import { encrypt } from '@/lib/encryption';
 import { decryptUserSensitiveFields, decryptUsersSensitiveFields } from '@/lib/utils/encryption-helpers';
 import { serializeUser, serializeUsers } from '@/lib/utils/serialization';
 import { findOrThrow, AppErrors } from '@/lib/errors';
-import { Permissions, type SessionUser } from '@/lib/permissions';
+import { Permissions, type PermissionUser } from '@/lib/permissions';
 import type { PaginationInput } from '@/lib/pagination';
 
 /**
@@ -49,7 +49,7 @@ export class UserService {
    * @param input - Pagination and filter parameters
    * @returns Paginated list of users with nextCursor
    */
-  async listUsers(session: SessionUser, input: UserListInput) {
+  async listUsers(session: PermissionUser, input: UserListInput) {
     const { limit, cursor, search, department, role } = input;
 
     // Build where clause for filtering (exclude soft-deleted users)
@@ -111,7 +111,7 @@ export class UserService {
    * @param userId - ID of user to fetch
    * @returns User object with decrypted and serialized fields
    */
-  async getUserById(session: SessionUser, userId: string) {
+  async getUserById(session: PermissionUser, userId: string) {
     this.logger?.debug({ targetUserId: userId }, 'Fetching user profile');
 
     const user = await findOrThrow(
@@ -155,7 +155,7 @@ export class UserService {
    * @param data - Update data
    * @returns Updated user object
    */
-  async updateUser(session: SessionUser, userId: string, data: UpdateUserInput) {
+  async updateUser(session: PermissionUser, userId: string, data: UpdateUserInput) {
     this.logger?.info({
       targetUserId: userId,
       updatedFields: Object.keys(data),
@@ -191,7 +191,7 @@ export class UserService {
    * @returns Updated user object
    */
   async updateSensitiveFields(
-    session: SessionUser,
+    session: PermissionUser,
     userId: string,
     data: UpdateSensitiveUserInput
   ) {
@@ -274,7 +274,7 @@ export class UserService {
    * @param userId - ID of user to soft delete
    * @returns Success message
    */
-  async softDeleteUser(session: SessionUser, userId: string) {
+  async softDeleteUser(session: PermissionUser, userId: string) {
     this.logger?.info({ targetUserId: userId }, 'Soft deleting user account');
 
     // Check permission
@@ -314,7 +314,7 @@ export class UserService {
    * @param userId - ID of user to hard delete
    * @returns Success message
    */
-  async hardDeleteUser(session: SessionUser, userId: string) {
+  async hardDeleteUser(session: PermissionUser, userId: string) {
     this.logger?.warn({ targetUserId: userId }, 'Hard deleting user account - IRREVERSIBLE');
 
     // Check permission
@@ -359,7 +359,7 @@ export class UserService {
    * @param userId - ID of user to restore
    * @returns Success message
    */
-  async restoreUser(session: SessionUser, userId: string) {
+  async restoreUser(session: PermissionUser, userId: string) {
     this.logger?.info({ targetUserId: userId }, 'Restoring soft-deleted user account');
 
     // Check permission (manager only)

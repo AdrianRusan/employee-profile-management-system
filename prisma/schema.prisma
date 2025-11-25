@@ -11,24 +11,34 @@ datasource db {
 }
 
 model User {
-  id                 String            @id @default(cuid())
-  email              String            @unique
-  name               String
-  role               Role              @default(EMPLOYEE)
-  department         String?
-  title              String?
-  bio                String?
-  avatar             String?
-  salary             Decimal?
-  ssn                String?
-  address            String?
-  performanceRating  Int?
-  deletedAt          DateTime?
-  feedbackGiven      Feedback[]        @relation("FeedbackGiver")
-  feedbackReceived   Feedback[]        @relation("FeedbackReceiver")
-  absenceRequests    AbsenceRequest[]
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
+  id                    String            @id @default(cuid())
+  email                 String            @unique
+  name                  String
+  role                  Role              @default(EMPLOYEE)
+  department            String?
+  position              String?           // Job position/title
+  title                 String?
+  bio                   String?
+  avatar                String?
+  phoneNumber           String?
+  address               String?
+  city                  String?
+  state                 String?
+  zipCode               String?
+  country               String?
+  salary                Decimal?
+  ssn                   String?
+  dateOfBirth           DateTime?
+  hireDate              DateTime?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  performanceRating     Int?
+  deletedAt             DateTime?
+  feedbackGiven         Feedback[]        @relation("FeedbackGiver")
+  feedbackReceived      Feedback[]        @relation("FeedbackReceiver")
+  absenceRequests       AbsenceRequest[]
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
 
   @@index([email])
   @@index([department])

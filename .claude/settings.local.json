@@ -68,7 +68,11 @@
       "Bash(for file in tests/e2e/*.spec.ts)",
       "Bash(done)",
       "mcp__filesystem__list_directory",
-      "mcp__filesystem__read_multiple_files"
+      "mcp__filesystem__read_multiple_files",
+      "Skill(backend-development)",
+      "Bash(tree:*)",
+      "Bash(cd:*)",
+      "Skill(aesthetic)"
     ],
     "deny": [],
     "ask": []

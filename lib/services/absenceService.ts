@@ -2,7 +2,7 @@ import { PrismaClient, Prisma, AbsenceStatus } from '@prisma/client';
 import type { Logger } from 'pino';
 import { USER_ABSENCE_SELECT, USER_CARD_SELECT } from '@/lib/prisma/selects';
 import { AppErrors, findOrThrow } from '@/lib/errors';
-import { Permissions, type SessionUser } from '@/lib/permissions';
+import { Permissions, type PermissionUser } from '@/lib/permissions';
 import type { PaginationInput } from '@/lib/pagination';
 
 /**
@@ -151,7 +151,7 @@ export class AbsenceService {
    * @param input - Absence request data
    * @returns Created absence request
    */
-  async processAbsenceRequest(session: SessionUser, input: CreateAbsenceInput) {
+  async processAbsenceRequest(session: PermissionUser, input: CreateAbsenceInput) {
     const { startDate, endDate, reason } = input;
 
     this.logger?.info({
@@ -231,7 +231,7 @@ export class AbsenceService {
    * @param userId - User ID to fetch absences for
    * @returns List of absence requests
    */
-  async getAbsencesForUser(session: SessionUser, userId: string) {
+  async getAbsencesForUser(session: PermissionUser, userId: string) {
     // Check permissions
     if (!Permissions.absence.viewForUser(session, userId)) {
       throw AppErrors.forbidden('You do not have permission to view these absence requests');
@@ -271,7 +271,7 @@ export class AbsenceService {
    * @param session - Current user session
    * @returns List of absence requests
    */
-  async getMyAbsences(session: SessionUser) {
+  async getMyAbsences(session: PermissionUser) {
     return this.prisma.absenceRequest.findMany({
       where: {
         userId: session.id,
@@ -289,7 +289,7 @@ export class AbsenceService {
    * @param input - Pagination and filter parameters
    * @returns Paginated absence requests
    */
-  async getAllAbsences(session: SessionUser, input: AbsenceListInput) {
+  async getAllAbsences(session: PermissionUser, input: AbsenceListInput) {
     // Only managers can view all absence requests
     if (!Permissions.absence.viewAll(session)) {
       throw AppErrors.forbidden('Only managers can view all absence requests');
@@ -333,7 +333,7 @@ export class AbsenceService {
    * @returns Updated absence request
    */
   async updateAbsenceStatus(
-    session: SessionUser,
+    session: PermissionUser,
     absenceId: string,
     status: AbsenceStatus
   ) {
@@ -392,7 +392,7 @@ export class AbsenceService {
    * @param absenceIds - Array of absence request IDs to approve
    * @returns Count of updated requests
    */
-  async bulkApproveAbsences(session: SessionUser, absenceIds: string[]) {
+  async bulkApproveAbsences(session: PermissionUser, absenceIds: string[]) {
     this.logger?.info({
       count: absenceIds.length,
       absenceIds,
@@ -431,7 +431,7 @@ export class AbsenceService {
    * @param absenceId - Absence request ID
    * @returns Success message
    */
-  async deleteAbsence(session: SessionUser, absenceId: string) {
+  async deleteAbsence(session: PermissionUser, absenceId: string) {
     this.logger?.info({ absenceId }, 'Deleting absence request');
 
     // Find the absence request

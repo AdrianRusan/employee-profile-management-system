@@ -1,12 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import { SerializedUser } from '@/lib/types/user';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { canViewSensitiveData, canEditProfile } from '@/lib/permissions';
-import { Edit, Mail, Briefcase, Building2, DollarSign, Shield, MapPin, TrendingUp } from 'lucide-react';
+import { Permissions, PermissionUser } from '@/lib/permissions';
+import { Edit, Mail, Briefcase, Building2, DollarSign, Shield, MapPin, TrendingUp, Eye, EyeOff } from 'lucide-react';
 
 interface ProfileCardProps {
   user: SerializedUser;
@@ -20,8 +21,21 @@ interface ProfileCardProps {
  * with role-based field visibility
  */
 export function ProfileCard({ user, currentUserId, currentUserRole, onEdit }: ProfileCardProps) {
-  const canEdit = canEditProfile(currentUserRole, currentUserId, user.id);
-  const canSeeSensitive = canViewSensitiveData(currentUserRole, currentUserId, user.id);
+  const [showSSN, setShowSSN] = useState(false);
+  const viewer: PermissionUser = { id: currentUserId, role: currentUserRole, email: '' };
+  const canEdit = Permissions.user.edit(viewer, { id: user.id });
+  const canSeeSensitive = Permissions.user.viewSensitive(viewer, { id: user.id });
+
+  // Mask SSN (show only last 4 digits)
+  const maskSSN = (ssn: string): string => {
+    if (!ssn) return '';
+    // Handle different SSN formats (with or without dashes)
+    const digits = ssn.replace(/\D/g, '');
+    if (digits.length >= 4) {
+      return `***-**-${digits.slice(-4)}`;
+    }
+    return '***-**-****';
+  };
 
   // Get user initials for avatar fallback
   const initials = user.name
@@ -137,7 +151,16 @@ export function ProfileCard({ user, currentUserId, currentUserRole, onEdit }: Pr
                   <div className="flex items-center gap-2">
                     <Shield className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-medium">SSN:</span>
-                    <span className="text-sm font-mono">{user.ssn}</span>
+                    <span className="text-sm font-mono">{showSSN ? user.ssn : maskSSN(user.ssn)}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => setShowSSN(!showSSN)}
+                      aria-label={showSSN ? "Hide SSN" : "Show SSN"}
+                    >
+                      {showSSN ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                    </Button>
                   </div>
                 )}
               </div>

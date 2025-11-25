@@ -28,7 +28,7 @@ interface AbsenceWithUser extends Omit<AbsenceRequest, 'createdAt' | 'updatedAt'
   updatedAt: string | Date;
   startDate: string | Date;
   endDate: string | Date;
-  deletedAt: string | Date | null;
+  deletedAt?: string;
 }
 
 interface AbsenceTableProps {
