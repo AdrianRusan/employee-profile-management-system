@@ -158,7 +158,7 @@ test.describe('Absence Management @core', () => {
       await expect(page).toHaveURL(/\/dashboard\/absences/);
     } else {
       // If no pending requests, that's ok - skip the test
-      console.log('No pending absence requests to approve');
+      test.skip();
     }
   });
 
@@ -184,7 +184,7 @@ test.describe('Absence Management @core', () => {
       await expect(page).toHaveURL(/\/dashboard\/absences/);
     } else {
       // If no pending requests, that's ok - skip the test
-      console.log('No pending absence requests to reject');
+      test.skip();
     }
   });
 

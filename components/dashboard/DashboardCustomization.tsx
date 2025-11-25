@@ -100,7 +100,7 @@ export function DashboardCustomization({ onPreferencesChange }: DashboardCustomi
             <Switch
               id="metrics"
               checked={preferences.showMetrics}
-              onCheckedChange={(checked) => handlePreferenceChange('showMetrics', checked)}
+              onCheckedChange={(checked: boolean) => handlePreferenceChange('showMetrics', checked)}
             />
           </div>
 
@@ -117,7 +117,7 @@ export function DashboardCustomization({ onPreferencesChange }: DashboardCustomi
             <Switch
               id="feedback-chart"
               checked={preferences.showFeedbackChart}
-              onCheckedChange={(checked) => handlePreferenceChange('showFeedbackChart', checked)}
+              onCheckedChange={(checked: boolean) => handlePreferenceChange('showFeedbackChart', checked)}
             />
           </div>
 
@@ -134,7 +134,7 @@ export function DashboardCustomization({ onPreferencesChange }: DashboardCustomi
             <Switch
               id="absence-chart"
               checked={preferences.showAbsenceChart}
-              onCheckedChange={(checked) => handlePreferenceChange('showAbsenceChart', checked)}
+              onCheckedChange={(checked: boolean) => handlePreferenceChange('showAbsenceChart', checked)}
             />
           </div>
 
@@ -151,7 +151,7 @@ export function DashboardCustomization({ onPreferencesChange }: DashboardCustomi
             <Switch
               id="upcoming-absences"
               checked={preferences.showUpcomingAbsences}
-              onCheckedChange={(checked) => handlePreferenceChange('showUpcomingAbsences', checked)}
+              onCheckedChange={(checked: boolean) => handlePreferenceChange('showUpcomingAbsences', checked)}
             />
           </div>
 
@@ -168,7 +168,7 @@ export function DashboardCustomization({ onPreferencesChange }: DashboardCustomi
             <Switch
               id="activity-feed"
               checked={preferences.showActivityFeed}
-              onCheckedChange={(checked) => handlePreferenceChange('showActivityFeed', checked)}
+              onCheckedChange={(checked: boolean) => handlePreferenceChange('showActivityFeed', checked)}
             />
           </div>
 

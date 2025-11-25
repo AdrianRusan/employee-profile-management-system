@@ -139,8 +139,7 @@ export class UserService {
     // Filter sensitive fields if viewer doesn't have permission
     if (!canSeeSensitive) {
       this.logger?.debug({ targetUserId: userId }, 'Returning public profile fields');
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { salary, ssn, address, performanceRating, ...publicFields } = serializedUser;
+      const { salary: _salary, ssn: _ssn, address: _address, performanceRating: _performanceRating, ...publicFields } = serializedUser;
       return publicFields;
     }
 
