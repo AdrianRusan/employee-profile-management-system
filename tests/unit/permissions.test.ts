@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { Permissions, assertPermission, SessionUser } from '@/lib/permissions';
+import { Permissions, assertPermission, PermissionUser } from '@/lib/permissions';
 import { Role } from '@prisma/client';
 
 describe('Permissions.user.viewSensitive', () => {
-  const manager: SessionUser = { id: '1', role: 'MANAGER' as Role, email: 'manager@test.com' };
-  const employee: SessionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'employee@test.com' };
-  const anotherEmployee: SessionUser = { id: '3', role: 'EMPLOYEE' as Role, email: 'other@test.com' };
+  const manager: PermissionUser = { id: '1', role: 'MANAGER' as Role, email: 'manager@test.com' };
+  const employee: PermissionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'employee@test.com' };
+  const anotherEmployee: PermissionUser = { id: '3', role: 'EMPLOYEE' as Role, email: 'other@test.com' };
 
   describe('Manager permissions', () => {
     it('allows managers to view any employee sensitive data', () => {
@@ -18,7 +18,7 @@ describe('Permissions.user.viewSensitive', () => {
     });
 
     it('allows managers to view other managers sensitive data', () => {
-      const anotherManager: SessionUser = { id: '4', role: 'MANAGER' as Role, email: 'manager2@test.com' };
+      const anotherManager: PermissionUser = { id: '4', role: 'MANAGER' as Role, email: 'manager2@test.com' };
       expect(Permissions.user.viewSensitive(manager, anotherManager)).toBe(true);
     });
   });
@@ -39,9 +39,9 @@ describe('Permissions.user.viewSensitive', () => {
 });
 
 describe('Permissions.user.edit', () => {
-  const manager: SessionUser = { id: '1', role: 'MANAGER' as Role, email: 'manager@test.com' };
-  const employee: SessionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'employee@test.com' };
-  const anotherEmployee: SessionUser = { id: '3', role: 'EMPLOYEE' as Role, email: 'other@test.com' };
+  const manager: PermissionUser = { id: '1', role: 'MANAGER' as Role, email: 'manager@test.com' };
+  const employee: PermissionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'employee@test.com' };
+  const anotherEmployee: PermissionUser = { id: '3', role: 'EMPLOYEE' as Role, email: 'other@test.com' };
 
   it('allows managers to edit any user profile', () => {
     expect(Permissions.user.edit(manager, employee)).toBe(true);
@@ -66,8 +66,8 @@ describe('Permissions.user.edit', () => {
 });
 
 describe('Permissions.user.delete', () => {
-  const manager: SessionUser = { id: '1', role: 'MANAGER' as Role, email: 'manager@test.com' };
-  const employee: SessionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'employee@test.com' };
+  const manager: PermissionUser = { id: '1', role: 'MANAGER' as Role, email: 'manager@test.com' };
+  const employee: PermissionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'employee@test.com' };
 
   it('allows managers to delete employee accounts', () => {
     expect(Permissions.user.delete(manager, employee)).toBe(true);
@@ -84,8 +84,8 @@ describe('Permissions.user.delete', () => {
 });
 
 describe('Permissions.user.view', () => {
-  const manager: SessionUser = { id: '1', role: 'MANAGER' as Role, email: 'manager@test.com' };
-  const employee: SessionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'employee@test.com' };
+  const manager: PermissionUser = { id: '1', role: 'MANAGER' as Role, email: 'manager@test.com' };
+  const employee: PermissionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'employee@test.com' };
 
   it('allows all authenticated users to view profiles', () => {
     expect(Permissions.user.view(manager, employee)).toBe(true);
@@ -95,8 +95,8 @@ describe('Permissions.user.view', () => {
 });
 
 describe('Permissions.user.updateSensitive', () => {
-  const manager: SessionUser = { id: '1', role: 'MANAGER' as Role, email: 'manager@test.com' };
-  const employee: SessionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'employee@test.com' };
+  const manager: PermissionUser = { id: '1', role: 'MANAGER' as Role, email: 'manager@test.com' };
+  const employee: PermissionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'employee@test.com' };
 
   it('allows only managers to update sensitive fields', () => {
     expect(Permissions.user.updateSensitive(manager)).toBe(true);
@@ -108,8 +108,8 @@ describe('Permissions.user.updateSensitive', () => {
 });
 
 describe('Permissions.feedback.give', () => {
-  const user1: SessionUser = { id: '1', role: 'EMPLOYEE' as Role, email: 'user1@test.com' };
-  const user2: SessionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'user2@test.com' };
+  const user1: PermissionUser = { id: '1', role: 'EMPLOYEE' as Role, email: 'user1@test.com' };
+  const user2: PermissionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'user2@test.com' };
 
   it('allows giving feedback to other users', () => {
     expect(Permissions.feedback.give(user1, user2)).toBe(true);
@@ -121,10 +121,10 @@ describe('Permissions.feedback.give', () => {
 });
 
 describe('Permissions.feedback.view', () => {
-  const manager: SessionUser = { id: '1', role: 'MANAGER' as Role, email: 'manager@test.com' };
-  const giver: SessionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'giver@test.com' };
-  const receiver: SessionUser = { id: '3', role: 'EMPLOYEE' as Role, email: 'receiver@test.com' };
-  const other: SessionUser = { id: '4', role: 'EMPLOYEE' as Role, email: 'other@test.com' };
+  const manager: PermissionUser = { id: '1', role: 'MANAGER' as Role, email: 'manager@test.com' };
+  const giver: PermissionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'giver@test.com' };
+  const receiver: PermissionUser = { id: '3', role: 'EMPLOYEE' as Role, email: 'receiver@test.com' };
+  const other: PermissionUser = { id: '4', role: 'EMPLOYEE' as Role, email: 'other@test.com' };
 
   const feedback = { giverId: giver.id, receiverId: receiver.id };
 
@@ -146,9 +146,9 @@ describe('Permissions.feedback.view', () => {
 });
 
 describe('Permissions.feedback.edit', () => {
-  const manager: SessionUser = { id: '1', role: 'MANAGER' as Role, email: 'manager@test.com' };
-  const giver: SessionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'giver@test.com' };
-  const other: SessionUser = { id: '3', role: 'EMPLOYEE' as Role, email: 'other@test.com' };
+  const manager: PermissionUser = { id: '1', role: 'MANAGER' as Role, email: 'manager@test.com' };
+  const giver: PermissionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'giver@test.com' };
+  const other: PermissionUser = { id: '3', role: 'EMPLOYEE' as Role, email: 'other@test.com' };
 
   const feedback = { giverId: giver.id };
 
@@ -166,8 +166,8 @@ describe('Permissions.feedback.edit', () => {
 });
 
 describe('Permissions.absence.create', () => {
-  const employee: SessionUser = { id: '1', role: 'EMPLOYEE' as Role, email: 'employee@test.com' };
-  const manager: SessionUser = { id: '2', role: 'MANAGER' as Role, email: 'manager@test.com' };
+  const employee: PermissionUser = { id: '1', role: 'EMPLOYEE' as Role, email: 'employee@test.com' };
+  const manager: PermissionUser = { id: '2', role: 'MANAGER' as Role, email: 'manager@test.com' };
 
   it('allows all authenticated users to create absence requests', () => {
     expect(Permissions.absence.create(employee)).toBe(true);
@@ -176,9 +176,9 @@ describe('Permissions.absence.create', () => {
 });
 
 describe('Permissions.absence.view', () => {
-  const manager: SessionUser = { id: '1', role: 'MANAGER' as Role, email: 'manager@test.com' };
-  const employee: SessionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'employee@test.com' };
-  const other: SessionUser = { id: '3', role: 'EMPLOYEE' as Role, email: 'other@test.com' };
+  const manager: PermissionUser = { id: '1', role: 'MANAGER' as Role, email: 'manager@test.com' };
+  const employee: PermissionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'employee@test.com' };
+  const other: PermissionUser = { id: '3', role: 'EMPLOYEE' as Role, email: 'other@test.com' };
 
   const absence = { userId: employee.id };
 
@@ -196,8 +196,8 @@ describe('Permissions.absence.view', () => {
 });
 
 describe('Permissions.absence.approve', () => {
-  const manager: SessionUser = { id: '1', role: 'MANAGER' as Role, email: 'manager@test.com' };
-  const employee: SessionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'employee@test.com' };
+  const manager: PermissionUser = { id: '1', role: 'MANAGER' as Role, email: 'manager@test.com' };
+  const employee: PermissionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'employee@test.com' };
 
   it('allows only managers to approve/reject absence requests', () => {
     expect(Permissions.absence.approve(manager)).toBe(true);
@@ -209,9 +209,9 @@ describe('Permissions.absence.approve', () => {
 });
 
 describe('Permissions.absence.edit', () => {
-  const manager: SessionUser = { id: '1', role: 'MANAGER' as Role, email: 'manager@test.com' };
-  const employee: SessionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'employee@test.com' };
-  const other: SessionUser = { id: '3', role: 'EMPLOYEE' as Role, email: 'other@test.com' };
+  const manager: PermissionUser = { id: '1', role: 'MANAGER' as Role, email: 'manager@test.com' };
+  const employee: PermissionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'employee@test.com' };
+  const other: PermissionUser = { id: '3', role: 'EMPLOYEE' as Role, email: 'other@test.com' };
 
   it('allows managers to edit pending requests', () => {
     const pendingAbsence = { userId: employee.id, status: 'PENDING' as const };
@@ -240,9 +240,9 @@ describe('Permissions.absence.edit', () => {
 });
 
 describe('Permissions.absence.delete', () => {
-  const manager: SessionUser = { id: '1', role: 'MANAGER' as Role, email: 'manager@test.com' };
-  const employee: SessionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'employee@test.com' };
-  const other: SessionUser = { id: '3', role: 'EMPLOYEE' as Role, email: 'other@test.com' };
+  const manager: PermissionUser = { id: '1', role: 'MANAGER' as Role, email: 'manager@test.com' };
+  const employee: PermissionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'employee@test.com' };
+  const other: PermissionUser = { id: '3', role: 'EMPLOYEE' as Role, email: 'other@test.com' };
 
   it('allows managers to delete pending requests', () => {
     const pendingAbsence = { userId: employee.id, status: 'PENDING' as const };

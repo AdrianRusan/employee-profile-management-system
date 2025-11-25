@@ -30,7 +30,6 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
       window.location.href = '/login';
     },
     onError: (error) => {
-      console.error('Logout failed:', error);
       toast.error(error?.message || 'Logout failed. Please try again.');
     },
   });
@@ -38,9 +37,8 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
   const handleLogout = async () => {
     try {
       await logoutMutation.mutateAsync();
-    } catch (error) {
+    } catch {
       // Error is handled by onError callback
-      console.error('Logout error:', error);
     }
   };
 

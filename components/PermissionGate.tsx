@@ -2,7 +2,7 @@
 
 import { ReactNode } from 'react';
 import { trpc } from '@/lib/trpc/Provider';
-import { Permissions, SessionUser } from '@/lib/permissions';
+import { Permissions, PermissionUser } from '@/lib/permissions';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface PermissionGateProps {
@@ -10,7 +10,7 @@ interface PermissionGateProps {
   /** Content to show when permission is denied */
   fallback?: ReactNode;
   /** Custom permission check function using centralized Permissions object */
-  check: (permissions: typeof Permissions, user: SessionUser) => boolean;
+  check: (permissions: typeof Permissions, user: PermissionUser) => boolean;
 }
 
 /**

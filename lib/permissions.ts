@@ -1,10 +1,13 @@
 import { User, Feedback, AbsenceRequest, Role } from '@prisma/client';
 
 /**
- * Session user interface for permission checks
- * Contains minimal user information needed for authorization
+ * Minimal user type for permission checks.
+ * Only contains fields required for authorization decisions.
+ *
+ * Note: For full session user type with all fields (name, department, etc.),
+ * see PermissionUser in lib/type-guards.ts
  */
-export interface SessionUser {
+export interface PermissionUser {
   id: string;
   role: Role;
   email: string;
@@ -30,7 +33,7 @@ export const Permissions = {
      * - Users can view their own sensitive data
      * - Coworkers cannot view sensitive data (unless it's their own)
      */
-    viewSensitive: (viewer: SessionUser, target: Pick<User, 'id'>): boolean => {
+    viewSensitive: (viewer: PermissionUser, target: Pick<User, 'id'>): boolean => {
       return viewer.role === 'MANAGER' || viewer.id === target.id;
     },
 
@@ -40,7 +43,7 @@ export const Permissions = {
      * - Managers can edit all profiles
      * - Users can edit their own profile
      */
-    edit: (viewer: SessionUser, target: Pick<User, 'id'>): boolean => {
+    edit: (viewer: PermissionUser, target: Pick<User, 'id'>): boolean => {
       return viewer.role === 'MANAGER' || viewer.id === target.id;
     },
 
@@ -50,7 +53,7 @@ export const Permissions = {
      * - Only managers can delete accounts
      * - Managers cannot delete themselves (safety check)
      */
-    delete: (viewer: SessionUser, target: Pick<User, 'id'>): boolean => {
+    delete: (viewer: PermissionUser, target: Pick<User, 'id'>): boolean => {
       return viewer.role === 'MANAGER' && viewer.id !== target.id;
     },
 
@@ -60,7 +63,7 @@ export const Permissions = {
      * - All authenticated users can view profiles
      * - Sensitive fields are filtered separately via viewSensitive()
      */
-    view: (_viewer: SessionUser, _target: Pick<User, 'id'>): boolean => {
+    view: (_viewer: PermissionUser, _target: Pick<User, 'id'>): boolean => {
       // Everyone can view profiles (sensitive fields filtered separately)
       return true;
     },
@@ -70,7 +73,7 @@ export const Permissions = {
      * Rules:
      * - Only managers can update sensitive fields
      */
-    updateSensitive: (viewer: SessionUser): boolean => {
+    updateSensitive: (viewer: PermissionUser): boolean => {
       return viewer.role === 'MANAGER';
     },
   },
@@ -82,7 +85,7 @@ export const Permissions = {
      * - All authenticated users can give feedback
      * - Cannot give feedback to yourself
      */
-    give: (viewer: SessionUser, receiver: Pick<User, 'id'>): boolean => {
+    give: (viewer: PermissionUser, receiver: Pick<User, 'id'>): boolean => {
       return viewer.id !== receiver.id;
     },
 
@@ -93,7 +96,7 @@ export const Permissions = {
      * - Feedback receivers can view feedback they received
      * - Feedback givers can view feedback they gave
      */
-    view: (viewer: SessionUser, feedback: Pick<Feedback, 'giverId' | 'receiverId'>): boolean => {
+    view: (viewer: PermissionUser, feedback: Pick<Feedback, 'giverId' | 'receiverId'>): boolean => {
       return (
         viewer.id === feedback.giverId ||
         viewer.id === feedback.receiverId ||
@@ -108,7 +111,7 @@ export const Permissions = {
      * - Users can view feedback they received
      * - Users can view feedback they gave (filtered separately)
      */
-    viewForUser: (viewer: SessionUser, targetUserId: string): boolean => {
+    viewForUser: (viewer: PermissionUser, targetUserId: string): boolean => {
       return viewer.role === 'MANAGER' || viewer.id === targetUserId;
     },
 
@@ -118,14 +121,14 @@ export const Permissions = {
      * - Managers can edit/delete any feedback
      * - Feedback givers can edit/delete their own feedback
      */
-    edit: (viewer: SessionUser, feedback: Pick<Feedback, 'giverId'>): boolean => {
+    edit: (viewer: PermissionUser, feedback: Pick<Feedback, 'giverId'>): boolean => {
       return viewer.id === feedback.giverId || viewer.role === 'MANAGER';
     },
 
     /**
      * Can delete feedback (alias for edit for clarity)
      */
-    delete: (viewer: SessionUser, feedback: Pick<Feedback, 'giverId'>): boolean => {
+    delete: (viewer: PermissionUser, feedback: Pick<Feedback, 'giverId'>): boolean => {
       return viewer.id === feedback.giverId || viewer.role === 'MANAGER';
     },
   },
@@ -136,7 +139,7 @@ export const Permissions = {
      * Rules:
      * - All authenticated users can create absence requests
      */
-    create: (_viewer: SessionUser): boolean => {
+    create: (_viewer: PermissionUser): boolean => {
       return true;
     },
 
@@ -146,7 +149,7 @@ export const Permissions = {
      * - Managers can view all absence requests
      * - Users can view their own absence requests
      */
-    view: (viewer: SessionUser, absence: Pick<AbsenceRequest, 'userId'>): boolean => {
+    view: (viewer: PermissionUser, absence: Pick<AbsenceRequest, 'userId'>): boolean => {
       return viewer.role === 'MANAGER' || viewer.id === absence.userId;
     },
 
@@ -156,7 +159,7 @@ export const Permissions = {
      * - Managers can view all absence requests
      * - Users can view their own absence requests
      */
-    viewForUser: (viewer: SessionUser, targetUserId: string): boolean => {
+    viewForUser: (viewer: PermissionUser, targetUserId: string): boolean => {
       return viewer.role === 'MANAGER' || viewer.id === targetUserId;
     },
 
@@ -165,7 +168,7 @@ export const Permissions = {
      * Rules:
      * - Only managers can view all absence requests across all users
      */
-    viewAll: (viewer: SessionUser): boolean => {
+    viewAll: (viewer: PermissionUser): boolean => {
       return viewer.role === 'MANAGER';
     },
 
@@ -174,7 +177,7 @@ export const Permissions = {
      * Rules:
      * - Only managers can approve/reject absence requests
      */
-    approve: (viewer: SessionUser): boolean => {
+    approve: (viewer: PermissionUser): boolean => {
       return viewer.role === 'MANAGER';
     },
 
@@ -184,7 +187,7 @@ export const Permissions = {
      * - Users can edit their own pending requests only
      * - Managers can edit any pending requests
      */
-    edit: (viewer: SessionUser, absence: Pick<AbsenceRequest, 'userId' | 'status'>): boolean => {
+    edit: (viewer: PermissionUser, absence: Pick<AbsenceRequest, 'userId' | 'status'>): boolean => {
       if (viewer.role === 'MANAGER') {
         return absence.status === 'PENDING';
       }
@@ -197,7 +200,7 @@ export const Permissions = {
      * - Users can delete their own pending requests
      * - Managers can delete any pending requests
      */
-    delete: (viewer: SessionUser, absence: Pick<AbsenceRequest, 'userId' | 'status'>): boolean => {
+    delete: (viewer: PermissionUser, absence: Pick<AbsenceRequest, 'userId' | 'status'>): boolean => {
       if (viewer.role === 'MANAGER') {
         return absence.status === 'PENDING';
       }
@@ -231,84 +234,3 @@ export function assertPermission(
   }
 }
 
-// Legacy function exports for backwards compatibility
-// TODO: Phase out these functions in favor of Permissions object
-
-/**
- * @deprecated Use Permissions.user.viewSensitive() instead
- */
-export function canViewSensitiveData(
-  viewerRole: Role,
-  viewerId: string,
-  targetUserId: string
-): boolean {
-  return Permissions.user.viewSensitive(
-    { id: viewerId, role: viewerRole, email: '' },
-    { id: targetUserId }
-  );
-}
-
-/**
- * @deprecated Use Permissions.user.edit() instead
- */
-export function canEditProfile(
-  editorRole: Role,
-  editorId: string,
-  targetUserId: string
-): boolean {
-  return Permissions.user.edit(
-    { id: editorId, role: editorRole, email: '' },
-    { id: targetUserId }
-  );
-}
-
-/**
- * @deprecated Use Permissions.feedback.viewForUser() instead
- */
-export function canViewFeedback(
-  viewerRole: Role,
-  viewerId: string,
-  feedbackReceiverId: string,
-  feedbackGiverId?: string
-): boolean {
-  const viewer = { id: viewerId, role: viewerRole, email: '' };
-
-  // Check if can view feedback for user
-  if (!Permissions.feedback.viewForUser(viewer, feedbackReceiverId)) {
-    // If not, check if they're the giver
-    if (feedbackGiverId) {
-      return viewerId === feedbackGiverId;
-    }
-    return false;
-  }
-
-  return true;
-}
-
-/**
- * @deprecated Use Permissions.absence.approve() instead
- */
-export function canApproveAbsence(approverRole: Role): boolean {
-  return Permissions.absence.approve({ id: '', role: approverRole, email: '' });
-}
-
-/**
- * @deprecated Use Permissions.feedback.give() instead
- */
-export function canGiveFeedback(): boolean {
-  return true; // Basic check, receiver check happens in Permissions.feedback.give()
-}
-
-/**
- * @deprecated Use Permissions.feedback.delete() instead
- */
-export function canDeleteFeedback(
-  userRole: Role,
-  userId: string,
-  feedbackGiverId: string
-): boolean {
-  return Permissions.feedback.delete(
-    { id: userId, role: userRole, email: '' },
-    { giverId: feedbackGiverId }
-  );
-}

@@ -44,8 +44,8 @@ export function FeedbackChart() {
           <CardTitle>Feedback Breakdown</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="rounded-lg bg-red-50 p-4">
-            <p className="text-sm text-red-800">
+          <div className="rounded-lg bg-destructive/10 p-4">
+            <p className="text-sm text-destructive">
               Failed to load feedback stats. Please try again later.
             </p>
           </div>
@@ -59,16 +59,16 @@ export function FeedbackChart() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-blue-500" />
+            <Sparkles className="h-5 w-5 text-primary" />
             <CardTitle>Feedback Breakdown</CardTitle>
           </div>
           <CardDescription>Polished vs unpolished feedback</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-64 flex flex-col items-center justify-center text-center">
-            <Sparkles className="h-12 w-12 text-gray-300 mb-3" />
-            <p className="text-sm text-gray-500">No feedback received yet</p>
-            <p className="text-xs text-gray-400 mt-1">
+            <Sparkles className="h-12 w-12 text-muted-foreground/30 mb-3" />
+            <p className="text-sm text-muted-foreground">No feedback received yet</p>
+            <p className="text-xs text-muted-foreground/70 mt-1">
               Feedback will appear here once you receive some
             </p>
           </div>
@@ -94,7 +94,7 @@ export function FeedbackChart() {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-blue-500" />
+          <Sparkles className="h-5 w-5 text-primary" />
           <CardTitle>Feedback Breakdown</CardTitle>
         </div>
         <CardDescription>
@@ -130,9 +130,9 @@ export function FeedbackChart() {
                   if (active && payload && payload.length) {
                     const data = payload[0].payload;
                     return (
-                      <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
-                        <p className="text-sm font-medium text-gray-900">{data.name}</p>
-                        <p className="text-sm text-gray-600">
+                      <div className="bg-popover p-3 rounded-lg shadow-lg border border-border">
+                        <p className="text-sm font-medium text-popover-foreground">{data.name}</p>
+                        <p className="text-sm text-muted-foreground">
                           {data.value} items ({data.percentage}%)
                         </p>
                       </div>
@@ -152,7 +152,7 @@ export function FeedbackChart() {
                           className="w-3 h-3 rounded-full"
                           style={{ backgroundColor: entry.color }}
                         />
-                        <span className="text-sm text-gray-600">{entry.value}</span>
+                        <span className="text-sm text-muted-foreground">{entry.value}</span>
                       </div>
                     ))}
                   </div>
@@ -163,15 +163,15 @@ export function FeedbackChart() {
         </div>
 
         {/* Summary stats */}
-        <div className="mt-4 pt-4 border-t border-gray-200">
+        <div className="mt-4 pt-4 border-t border-border">
           <div className="grid grid-cols-2 gap-4 text-center">
             <div>
-              <p className="text-2xl font-bold text-blue-600">{stats.polished}</p>
-              <p className="text-xs text-gray-600 mt-1">AI Polished</p>
+              <p className="text-2xl font-bold text-primary">{stats.polished}</p>
+              <p className="text-xs text-muted-foreground mt-1">AI Polished</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-600">{stats.unpolished}</p>
-              <p className="text-xs text-gray-600 mt-1">Original</p>
+              <p className="text-2xl font-bold text-muted-foreground">{stats.unpolished}</p>
+              <p className="text-xs text-muted-foreground mt-1">Original</p>
             </div>
           </div>
         </div>

@@ -37,6 +37,7 @@ export type FeedbackFormData = z.infer<typeof feedbackSchema>;
  * Uses the same validation rules as feedback submission
  */
 export const polishFeedbackSchema = z.object({
+  feedbackId: z.string().cuid("Invalid feedback ID format").optional(),
   content: z
     .string()
     .trim()

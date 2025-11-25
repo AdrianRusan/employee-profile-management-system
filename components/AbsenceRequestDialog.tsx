@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format } from 'date-fns';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { format, addDays, addWeeks, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
+import { Calendar as CalendarIcon, Zap } from 'lucide-react';
 import { trpc } from '@/lib/trpc/Provider';
 import { absenceRequestFormSchema, type AbsenceRequestFormInput } from '@/lib/validations/absence';
 import {
@@ -35,6 +35,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 interface AbsenceRequestDialogProps {
   children?: React.ReactNode;
@@ -92,6 +93,41 @@ export function AbsenceRequestDialog({ children, onSuccess }: AbsenceRequestDial
     createMutation.mutate(data);
   };
 
+  // Quick date preset functions
+  const applyDatePreset = (preset: string) => {
+    const today = getTodayNormalized();
+    let startDate = today;
+    let endDate = today;
+
+    switch (preset) {
+      case 'tomorrow':
+        startDate = addDays(today, 1);
+        endDate = addDays(today, 1);
+        break;
+      case 'next-week':
+        startDate = addDays(today, 7);
+        endDate = addDays(today, 11); // 5 business days
+        break;
+      case 'two-weeks':
+        startDate = addDays(today, 7);
+        endDate = addDays(today, 18); // 10 business days
+        break;
+      case 'this-week':
+        startDate = today;
+        endDate = endOfWeek(today, { weekStartsOn: 1 }); // Monday to Friday
+        break;
+      case 'next-month':
+        const nextMonth = addDays(today, 30);
+        startDate = startOfMonth(nextMonth);
+        endDate = endOfMonth(nextMonth);
+        break;
+    }
+
+    form.setValue('startDate', startDate);
+    form.setValue('endDate', endDate);
+    toast.success(`Dates set: ${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d')}`);
+  };
+
   // Reset form when dialog opens to ensure dates are always current
   const handleOpenChange = (newOpen: boolean) => {
     if (newOpen) {
@@ -120,6 +156,40 @@ export function AbsenceRequestDialog({ children, onSuccess }: AbsenceRequestDial
             Submit an absence request for manager approval. Please provide the date range and reason for your absence.
           </DialogDescription>
         </DialogHeader>
+
+        {/* Quick Date Presets */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4 text-yellow-500 dark:text-yellow-400" />
+            <span className="text-sm font-medium text-foreground">Quick Presets</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => applyDatePreset('tomorrow')}
+            >
+              Tomorrow
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => applyDatePreset('next-week')}
+            >
+              Next Week (5 days)
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => applyDatePreset('two-weeks')}
+            >
+              Next 2 Weeks
+            </Button>
+          </div>
+        </div>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

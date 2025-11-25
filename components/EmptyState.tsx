@@ -38,19 +38,42 @@ export function EmptyState({
   children,
 }: EmptyStateProps) {
   return (
-    <Card>
-      <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="rounded-full bg-gray-100 p-4">
-          <Icon className="h-10 w-10 text-gray-400" aria-hidden="true" />
+    <Card className="border-dashed">
+      <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+        {/* Animated Icon Container */}
+        <div className="relative">
+          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 blur-2xl opacity-50 animate-pulse"></div>
+          <div className="relative rounded-full bg-gradient-to-br from-blue-50 to-purple-50 p-6 shadow-sm">
+            <Icon className="h-12 w-12 text-blue-600" aria-hidden="true" />
+          </div>
         </div>
-        <h3 className="mt-4 text-lg font-semibold text-gray-900">{title}</h3>
-        <p className="mt-2 max-w-sm text-sm text-gray-600">{description}</p>
+
+        {/* Title with gradient */}
+        <h3 className="mt-6 text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+          {title}
+        </h3>
+
+        {/* Description */}
+        <p className="mt-3 max-w-md text-sm leading-relaxed text-gray-600">
+          {description}
+        </p>
+
+        {/* Action Button */}
         {action && (
-          <Button className="mt-6" onClick={action.onClick}>
+          <Button
+            className="mt-8 shadow-sm hover:shadow-md transition-shadow"
+            onClick={action.onClick}
+          >
             {action.label}
           </Button>
         )}
-        {children && <div className="mt-4">{children}</div>}
+
+        {/* Additional Content */}
+        {children && (
+          <div className="mt-6 w-full max-w-md">
+            {children}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

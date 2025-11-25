@@ -4,6 +4,7 @@ import { join } from 'path';
 import { randomUUID } from 'crypto';
 import { getCurrentUser } from '@/lib/session';
 import { isFile } from '@/lib/type-guards';
+import { logger } from '@/lib/logger';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
       filename: uniqueFilename,
     });
   } catch (error) {
-    console.error('Avatar upload error:', error);
+    logger.error({ error }, 'Avatar upload failed');
     return NextResponse.json(
       { error: 'Failed to upload avatar. Please try again.' },
       { status: 500 }
@@ -107,7 +108,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Avatar deletion error:', error);
+    logger.error({ error }, 'Avatar deletion failed');
     return NextResponse.json(
       { error: 'Failed to delete avatar. Please try again.' },
       { status: 500 }

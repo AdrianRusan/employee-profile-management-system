@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { trpc } from '@/lib/trpc/Provider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,6 +48,7 @@ export function QuickActions({ user }: QuickActionsProps) {
     id: string;
     name: string;
   } | null>(null);
+  const absenceDialogTriggerRef = useRef<HTMLButtonElement>(null);
 
   // Check if user is a manager
   const isManager = Permissions.absence.viewAll({ id: user.id, role: user.role, email: user.email });
@@ -58,7 +59,7 @@ export function QuickActions({ user }: QuickActionsProps) {
     {
       enabled: isManager,
       select: (data: RouterOutputs['absence']['getAll']) =>
-        data.absenceRequests.filter((absence) => absence.status === 'PENDING').length,
+        data.absences.filter((absence: any) => absence.status === 'PENDING').length,
     }
   );
 
@@ -82,6 +83,25 @@ export function QuickActions({ user }: QuickActionsProps) {
     setSelectedReceiver(null);
   };
 
+  // Listen for keyboard shortcuts
+  useEffect(() => {
+    const handleShortcutAction = (e: Event) => {
+      const customEvent = e as CustomEvent<{ action: string }>;
+      const { action } = customEvent.detail;
+
+      if (action === 'new-feedback') {
+        handleGiveFeedback();
+      } else if (action === 'new-absence') {
+        absenceDialogTriggerRef.current?.click();
+      }
+    };
+
+    window.addEventListener('keyboard-shortcut-action', handleShortcutAction);
+    return () => {
+      window.removeEventListener('keyboard-shortcut-action', handleShortcutAction);
+    };
+  }, []);
+
   return (
     <Card>
       <CardHeader>
@@ -96,13 +116,13 @@ export function QuickActions({ user }: QuickActionsProps) {
           {/* Give Feedback */}
           <Button
             variant="outline"
-            className="justify-start h-auto py-3"
+            className="justify-start h-auto py-3 transition-all duration-200 hover:shadow-md hover:border-primary/30"
             onClick={handleGiveFeedback}
           >
-            <MessageSquare className="mr-2 h-4 w-4" />
+            <MessageSquare className="mr-2 h-4 w-4 transition-colors" />
             <div className="text-left">
               <div className="font-medium">Give Feedback</div>
-              <div className="text-xs text-gray-500">Share peer feedback</div>
+              <div className="text-xs text-muted-foreground">Share peer feedback</div>
             </div>
           </Button>
 
@@ -112,11 +132,15 @@ export function QuickActions({ user }: QuickActionsProps) {
               // Optional: Add success callback
             }}
           >
-            <Button variant="outline" className="justify-start h-auto py-3 w-full">
-              <CalendarDays className="mr-2 h-4 w-4" />
+            <Button
+              ref={absenceDialogTriggerRef}
+              variant="outline"
+              className="justify-start h-auto py-3 w-full transition-all duration-200 hover:shadow-md hover:border-primary/30"
+            >
+              <CalendarDays className="mr-2 h-4 w-4 transition-colors" />
               <div className="text-left">
                 <div className="font-medium">Request Time Off</div>
-                <div className="text-xs text-gray-500">Submit absence request</div>
+                <div className="text-xs text-muted-foreground">Submit absence request</div>
               </div>
             </Button>
           </AbsenceRequestDialog>
@@ -127,7 +151,7 @@ export function QuickActions({ user }: QuickActionsProps) {
               <User className="mr-2 h-4 w-4" />
               <div className="text-left">
                 <div className="font-medium">View My Profile</div>
-                <div className="text-xs text-gray-500">See your details</div>
+                <div className="text-xs text-muted-foreground">See your details</div>
               </div>
             </Link>
           </Button>
@@ -138,7 +162,7 @@ export function QuickActions({ user }: QuickActionsProps) {
               <Users className="mr-2 h-4 w-4" />
               <div className="text-left">
                 <div className="font-medium">Browse Profiles</div>
-                <div className="text-xs text-gray-500">View all employees</div>
+                <div className="text-xs text-muted-foreground">View all employees</div>
               </div>
             </Link>
           </Button>
@@ -151,7 +175,7 @@ export function QuickActions({ user }: QuickActionsProps) {
                 <div className="text-left flex items-center gap-2">
                   <div>
                     <div className="font-medium">Pending Approvals</div>
-                    <div className="text-xs text-gray-500">Review time off requests</div>
+                    <div className="text-xs text-muted-foreground">Review time off requests</div>
                   </div>
                   {pendingCount !== undefined && pendingCount > 0 && (
                     <Badge variant="destructive" className="ml-auto">
@@ -217,7 +241,7 @@ function UserSelector({
     users?.pages.flatMap((page: InfiniteUserPage) => page.users).filter((u) => u.id !== currentUserId) || [];
 
   if (isLoading) {
-    return <div className="text-center py-4">Loading users...</div>;
+    return <div className="text-center py-4 text-muted-foreground">Loading users...</div>;
   }
 
   // Helper to get initials from name
@@ -232,7 +256,7 @@ function UserSelector({
   return (
     <div className="space-y-2 max-h-96 overflow-y-auto">
       {allUsers.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">No colleagues found</div>
+        <div className="text-center py-8 text-muted-foreground">No colleagues found</div>
       ) : (
         allUsers.map((user: UserData) => (
           <button
@@ -240,16 +264,16 @@ function UserSelector({
             onClick={() =>
               onSelect(user.id, user.name)
             }
-            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-left"
           >
-            <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium">
+            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-medium">
               {getInitials(user.name)}
             </div>
             <div>
               <div className="font-medium">
                 {user.name}
               </div>
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-muted-foreground">
                 {user.title} • {user.department}
               </div>
             </div>

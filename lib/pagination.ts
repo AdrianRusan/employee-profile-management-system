@@ -48,6 +48,7 @@ export const paginationSchema = z.object({
     .min(PAGINATION_LIMITS.MIN, `Limit must be at least ${PAGINATION_LIMITS.MIN}`)
     .max(PAGINATION_LIMITS.MAX, `Limit cannot exceed ${PAGINATION_LIMITS.MAX}`)
     .default(PAGINATION_LIMITS.DEFAULT),
+  skip: z.number().min(0).default(0).optional(),
   cursor: z.string().optional(),
 });
 

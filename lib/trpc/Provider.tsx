@@ -46,8 +46,8 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
 
   // Ensure CSRF token is available on mount
   useEffect(() => {
-    ensureCsrfToken().catch((error) => {
-      console.error('Failed to initialize CSRF token:', error);
+    ensureCsrfToken().catch(() => {
+      // CSRF initialization errors are handled by the API layer
     });
   }, []);
 

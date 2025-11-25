@@ -138,12 +138,12 @@ export function FeedbackList({ userId }: FeedbackListProps) {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <Avatar>
-                    <AvatarImage src={feedbackItem.giver.avatar || undefined} />
-                    <AvatarFallback>{getInitials(feedbackItem.giver.name)}</AvatarFallback>
+                    <AvatarImage src={feedbackItem.giver?.avatar || undefined} />
+                    <AvatarFallback>{getInitials(feedbackItem.giver?.name || 'Unknown')}</AvatarFallback>
                   </Avatar>
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="font-semibold">{feedbackItem.giver.name}</p>
+                      <p className="font-semibold">{feedbackItem.giver?.name || 'Unknown User'}</p>
                       {item.isPolished && (
                         <Badge variant="secondary" className="text-xs">
                           <Sparkles className="mr-1 h-3 w-3" />

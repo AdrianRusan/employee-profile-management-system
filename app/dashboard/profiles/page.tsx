@@ -173,7 +173,7 @@ export default function ProfilesPage() {
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Employee Profiles</h1>
+        <h1 className="text-3xl font-bold text-foreground">Employee Profiles</h1>
         <p className="text-muted-foreground mt-2">
           View and manage employee profiles across your organization
         </p>
@@ -198,8 +198,8 @@ export default function ProfilesPage() {
           <SelectContent>
             <SelectItem value="all">All Departments</SelectItem>
             {departments?.map((dept) => (
-              <SelectItem key={dept} value={dept}>
-                {dept}
+              <SelectItem key={dept || 'unknown'} value={dept || ''}>
+                {dept || 'Unknown'}
               </SelectItem>
             ))}
           </SelectContent>
