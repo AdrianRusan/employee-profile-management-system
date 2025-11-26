@@ -1,6 +1,6 @@
 'use client';
 
-+import { useState, useEffect, useCallback, type ElementType } from 'react';
+import { useState, useEffect, useCallback, type ElementType } from 'react';
 import {
   Settings,
   LayoutDashboard,
