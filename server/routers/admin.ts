@@ -205,7 +205,15 @@ export const adminRouter = router({
         where,
         skip: input.skip,
         take: input.take,
-        include: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          department: true,
+          status: true,
+          lastLoginAt: true,
+          createdAt: true,
           organization: {
             select: { name: true, slug: true },
           },

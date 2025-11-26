@@ -24,6 +24,24 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Search, Users } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import type { Role, UserStatus } from '@prisma/client';
+
+// Type for user with organization from admin.listAllUsers
+// Note: Dates are serialized as strings over tRPC
+type UserWithOrganization = {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  department: string | null;
+  status: UserStatus;
+  lastLoginAt: string | null;
+  createdAt: string;
+  organization: {
+    name: string;
+    slug: string;
+  };
+};
 
 export default function AllUsersPage() {
   const [search, setSearch] = useState('');
@@ -136,7 +154,7 @@ export default function AllUsersPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data.users.map((user) => (
+                    {(data.users as UserWithOrganization[]).map((user) => (
                       <TableRow
                         key={user.id}
                         className="hover:bg-secondary/50 border-border"
