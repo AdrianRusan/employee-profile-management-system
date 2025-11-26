@@ -311,7 +311,7 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {organization.users.map((user) => (
+                  {organization.users.map((user: { id: string; name: string | null; email: string; role: string; department: string | null; lastLoginAt: string | null }) => (
                     <TableRow
                       key={user.id}
                       className="hover:bg-secondary/50 border-border"
