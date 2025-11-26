@@ -15,13 +15,15 @@ async function main() {
   // Create demo organization
   const organization = await prisma.organization.upsert({
     where: { slug: 'acme' },
-    update: {},
+    update: {
+      settings: { onboardingCompleted: true },
+    },
     create: {
       name: 'Acme Corporation',
       slug: 'acme',
       logo: null,
       domain: 'acme.com',
-      settings: {},
+      settings: { onboardingCompleted: true },
     },
   });
   console.log(`✓ Created organization: ${organization.name} (${organization.slug})`);
