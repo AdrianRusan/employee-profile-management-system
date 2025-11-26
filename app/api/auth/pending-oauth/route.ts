@@ -3,12 +3,33 @@ import { cookies } from 'next/headers';
 import crypto from 'crypto';
 
 /**
+ * Get validated encryption key or throw
+ */
+function getEncryptionKey(): Buffer {
+  const keyHex = process.env.ENCRYPTION_KEY;
+  if (!keyHex) {
+    throw new Error('ENCRYPTION_KEY environment variable is not set');
+  }
+  const key = Buffer.from(keyHex, 'hex');
+  if (key.length !== 32) {
+    throw new Error('ENCRYPTION_KEY must be a 64-character hex string (32 bytes)');
+  }
+  return key;
+}
+
+/**
  * Decrypt pending OAuth data from cookie
  */
 function decryptPendingData(encrypted: string): Record<string, string> | null {
   try {
-    const key = Buffer.from(process.env.ENCRYPTION_KEY || '', 'hex');
+    const key = getEncryptionKey();
     const data = Buffer.from(encrypted, 'base64url');
+
+    // Validate minimum data length (16 IV + 16 authTag + at least 1 byte ciphertext)
+    if (data.length < 33) {
+      return null;
+    }
+
     const iv = data.subarray(0, 16);
     const authTag = data.subarray(16, 32);
     const ciphertext = data.subarray(32);
@@ -19,7 +40,8 @@ function decryptPendingData(encrypted: string): Record<string, string> | null {
       decipher.final(),
     ]);
     return JSON.parse(decrypted.toString('utf8'));
-  } catch {
+  } catch (error) {
+    console.error('OAuth pending data decryption failed:', error instanceof Error ? error.message : 'Unknown error');
     return null;
   }
 }

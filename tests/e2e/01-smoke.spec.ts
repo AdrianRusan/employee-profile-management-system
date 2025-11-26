@@ -13,23 +13,29 @@ test.describe('Smoke Tests @smoke', () => {
     await expect(page).toHaveURL(/\/login/);
   });
 
-  test('should login as employee with email only', async ({ page }) => {
-    await page.goto('/login');
+  test('should login as employee with email and password', async ({ page }) => {
+    await page.goto('/login', { waitUntil: 'networkidle' });
 
-    // Fill email (no password required)
+    // Wait for login form to be ready
+    await page.locator('input[type="email"]').waitFor({ state: 'visible' });
+
+    // Fill email
     await page.fill('input[type="email"]', 'david@example.com');
 
-    // Select role
-    await page.selectOption('select', 'EMPLOYEE');
+    // Fill password (demo password for seed users)
+    await page.fill('input[type="password"]', 'Password123!');
 
-    // Submit
-    await page.click('button[type="submit"]');
+    // Submit and wait for navigation
+    await Promise.all([
+      page.waitForURL(/\/dashboard/, { timeout: 30000 }),
+      page.click('button[type="submit"]'),
+    ]);
 
-    // Should redirect to dashboard
-    await page.waitForURL('/dashboard');
+    // Wait for page to stabilize
+    await page.waitForLoadState('networkidle');
 
-    // Should see welcome message
-    await expect(page.locator('text=/Welcome,/i')).toBeVisible();
+    // Should see welcome message (check Dashboard heading which confirms we're logged in)
+    await expect(page.locator('h1:has-text("Dashboard")')).toBeVisible({ timeout: 10000 });
   });
 
   test('should display dashboard with key elements', async ({ page }) => {
@@ -162,7 +168,7 @@ test.describe('Smoke Tests @smoke', () => {
 
     // Should still be logged in
     await expect(page).toHaveURL('/dashboard');
-    await expect(page.locator('text=/Welcome,/i')).toBeVisible();
+    await expect(page.locator('h1:has-text("Dashboard")')).toBeVisible({ timeout: 10000 });
   });
 
   test('should view employee directory with search', async ({ page }) => {

@@ -3,11 +3,13 @@ import { Feedback } from '@/src/domain/entities/Feedback';
 
 describe('Feedback Entity', () => {
   const validContent = 'This is valid feedback content that is at least 10 characters.';
+  const orgId = 'org-123';
 
   describe('create', () => {
     it('should create feedback with valid properties', () => {
-      const feedback = Feedback.create('giver-id', 'receiver-id', validContent);
+      const feedback = Feedback.create(orgId, 'giver-id', 'receiver-id', validContent);
 
+      expect(feedback.organizationId).toBe(orgId);
       expect(feedback.giverId).toBe('giver-id');
       expect(feedback.receiverId).toBe('receiver-id');
       expect(feedback.content).toBe(validContent);
@@ -18,43 +20,43 @@ describe('Feedback Entity', () => {
     });
 
     it('should use provided id if given', () => {
-      const feedback = Feedback.create('giver-id', 'receiver-id', validContent, 'custom-id');
+      const feedback = Feedback.create(orgId, 'giver-id', 'receiver-id', validContent, 'custom-id');
       expect(feedback.id).toBe('custom-id');
     });
 
     it('should throw when giving feedback to yourself', () => {
-      expect(() => Feedback.create('same-user', 'same-user', validContent)).toThrow(
+      expect(() => Feedback.create(orgId, 'same-user', 'same-user', validContent)).toThrow(
         'Cannot give feedback to yourself'
       );
     });
 
     it('should throw for content less than 10 characters', () => {
-      expect(() => Feedback.create('giver', 'receiver', 'short')).toThrow(
+      expect(() => Feedback.create(orgId, 'giver', 'receiver', 'short')).toThrow(
         'Feedback content must be at least 10 characters'
       );
     });
 
     it('should throw for empty content', () => {
-      expect(() => Feedback.create('giver', 'receiver', '')).toThrow(
+      expect(() => Feedback.create(orgId, 'giver', 'receiver', '')).toThrow(
         'Feedback content must be at least 10 characters'
       );
     });
 
     it('should throw for content exceeding 5000 characters', () => {
       const longContent = 'a'.repeat(5001);
-      expect(() => Feedback.create('giver', 'receiver', longContent)).toThrow(
+      expect(() => Feedback.create(orgId, 'giver', 'receiver', longContent)).toThrow(
         'Feedback content cannot exceed 5000 characters'
       );
     });
 
     it('should accept content at boundary (10 chars)', () => {
-      const feedback = Feedback.create('giver', 'receiver', '1234567890');
+      const feedback = Feedback.create(orgId, 'giver', 'receiver', '1234567890');
       expect(feedback.content).toBe('1234567890');
     });
 
     it('should accept content at boundary (5000 chars)', () => {
       const content = 'a'.repeat(5000);
-      const feedback = Feedback.create('giver', 'receiver', content);
+      const feedback = Feedback.create(orgId, 'giver', 'receiver', content);
       expect(feedback.content.length).toBe(5000);
     });
   });
@@ -64,6 +66,7 @@ describe('Feedback Entity', () => {
       const now = new Date();
       const feedback = Feedback.reconstitute({
         id: 'persisted-id',
+        organizationId: orgId,
         giverId: 'giver',
         receiverId: 'receiver',
         content: validContent,
@@ -81,7 +84,7 @@ describe('Feedback Entity', () => {
 
   describe('polishContent', () => {
     it('should polish feedback content', () => {
-      const feedback = Feedback.create('giver', 'receiver', validContent);
+      const feedback = Feedback.create(orgId, 'giver', 'receiver', validContent);
 
       feedback.polishContent('This is the polished version of the feedback.');
 
@@ -90,19 +93,19 @@ describe('Feedback Entity', () => {
     });
 
     it('should throw for empty polished content', () => {
-      const feedback = Feedback.create('giver', 'receiver', validContent);
+      const feedback = Feedback.create(orgId, 'giver', 'receiver', validContent);
 
       expect(() => feedback.polishContent('')).toThrow('Polished content cannot be empty');
     });
 
     it('should throw for whitespace-only polished content', () => {
-      const feedback = Feedback.create('giver', 'receiver', validContent);
+      const feedback = Feedback.create(orgId, 'giver', 'receiver', validContent);
 
       expect(() => feedback.polishContent('   ')).toThrow('Polished content cannot be empty');
     });
 
     it('should throw when polishing deleted feedback', () => {
-      const feedback = Feedback.create('giver', 'receiver', validContent);
+      const feedback = Feedback.create(orgId, 'giver', 'receiver', validContent);
       feedback.softDelete();
 
       expect(() => feedback.polishContent('polished')).toThrow('Cannot polish deleted feedback');
@@ -111,7 +114,7 @@ describe('Feedback Entity', () => {
 
   describe('resetPolish', () => {
     it('should reset polished content', () => {
-      const feedback = Feedback.create('giver', 'receiver', validContent);
+      const feedback = Feedback.create(orgId, 'giver', 'receiver', validContent);
       feedback.polishContent('Polished content');
       expect(feedback.isPolished).toBe(true);
 
@@ -124,7 +127,7 @@ describe('Feedback Entity', () => {
 
   describe('updateContent', () => {
     it('should update feedback content', () => {
-      const feedback = Feedback.create('giver', 'receiver', validContent);
+      const feedback = Feedback.create(orgId, 'giver', 'receiver', validContent);
       const newContent = 'This is updated feedback content.';
 
       feedback.updateContent(newContent);
@@ -133,7 +136,7 @@ describe('Feedback Entity', () => {
     });
 
     it('should reset polish when content is updated', () => {
-      const feedback = Feedback.create('giver', 'receiver', validContent);
+      const feedback = Feedback.create(orgId, 'giver', 'receiver', validContent);
       feedback.polishContent('Polished version');
       expect(feedback.isPolished).toBe(true);
 
@@ -144,14 +147,14 @@ describe('Feedback Entity', () => {
     });
 
     it('should throw when updating deleted feedback', () => {
-      const feedback = Feedback.create('giver', 'receiver', validContent);
+      const feedback = Feedback.create(orgId, 'giver', 'receiver', validContent);
       feedback.softDelete();
 
       expect(() => feedback.updateContent('new content')).toThrow('Cannot update deleted feedback');
     });
 
     it('should throw for content too short', () => {
-      const feedback = Feedback.create('giver', 'receiver', validContent);
+      const feedback = Feedback.create(orgId, 'giver', 'receiver', validContent);
 
       expect(() => feedback.updateContent('short')).toThrow(
         'Feedback content must be at least 10 characters'
@@ -159,7 +162,7 @@ describe('Feedback Entity', () => {
     });
 
     it('should throw for content too long', () => {
-      const feedback = Feedback.create('giver', 'receiver', validContent);
+      const feedback = Feedback.create(orgId, 'giver', 'receiver', validContent);
 
       expect(() => feedback.updateContent('a'.repeat(5001))).toThrow(
         'Feedback content cannot exceed 5000 characters'
@@ -169,7 +172,7 @@ describe('Feedback Entity', () => {
 
   describe('softDelete', () => {
     it('should soft delete feedback', () => {
-      const feedback = Feedback.create('giver', 'receiver', validContent);
+      const feedback = Feedback.create(orgId, 'giver', 'receiver', validContent);
       expect(feedback.isDeleted()).toBe(false);
 
       feedback.softDelete();
@@ -179,7 +182,7 @@ describe('Feedback Entity', () => {
     });
 
     it('should throw when deleting already deleted feedback', () => {
-      const feedback = Feedback.create('giver', 'receiver', validContent);
+      const feedback = Feedback.create(orgId, 'giver', 'receiver', validContent);
       feedback.softDelete();
 
       expect(() => feedback.softDelete()).toThrow('Feedback is already deleted');
@@ -188,13 +191,13 @@ describe('Feedback Entity', () => {
 
   describe('getDisplayContent', () => {
     it('should return original content when not polished', () => {
-      const feedback = Feedback.create('giver', 'receiver', validContent);
+      const feedback = Feedback.create(orgId, 'giver', 'receiver', validContent);
 
       expect(feedback.getDisplayContent()).toBe(validContent);
     });
 
     it('should return polished content when available', () => {
-      const feedback = Feedback.create('giver', 'receiver', validContent);
+      const feedback = Feedback.create(orgId, 'giver', 'receiver', validContent);
       feedback.polishContent('Polished version');
 
       expect(feedback.getDisplayContent()).toBe('Polished version');
@@ -203,7 +206,7 @@ describe('Feedback Entity', () => {
 
   describe('isFromUser / isForUser', () => {
     it('should correctly identify feedback giver', () => {
-      const feedback = Feedback.create('giver-id', 'receiver-id', validContent);
+      const feedback = Feedback.create(orgId, 'giver-id', 'receiver-id', validContent);
 
       expect(feedback.isFromUser('giver-id')).toBe(true);
       expect(feedback.isFromUser('receiver-id')).toBe(false);
@@ -211,7 +214,7 @@ describe('Feedback Entity', () => {
     });
 
     it('should correctly identify feedback receiver', () => {
-      const feedback = Feedback.create('giver-id', 'receiver-id', validContent);
+      const feedback = Feedback.create(orgId, 'giver-id', 'receiver-id', validContent);
 
       expect(feedback.isForUser('receiver-id')).toBe(true);
       expect(feedback.isForUser('giver-id')).toBe(false);
@@ -221,11 +224,12 @@ describe('Feedback Entity', () => {
 
   describe('toObject', () => {
     it('should return all properties', () => {
-      const feedback = Feedback.create('giver', 'receiver', validContent, 'test-id');
+      const feedback = Feedback.create(orgId, 'giver', 'receiver', validContent, 'test-id');
 
       const obj = feedback.toObject();
 
       expect(obj.id).toBe('test-id');
+      expect(obj.organizationId).toBe(orgId);
       expect(obj.giverId).toBe('giver');
       expect(obj.receiverId).toBe('receiver');
       expect(obj.content).toBe(validContent);

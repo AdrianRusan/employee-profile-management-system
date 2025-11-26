@@ -32,6 +32,14 @@ export async function POST(request: NextRequest) {
 
     const file = fileValue;
 
+    // Validate file size BEFORE reading into memory (prevents DoS via large uploads)
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: 'File too large. Maximum size is 5MB.' },
+        { status: 400 }
+      );
+    }
+
     // Validate file type from header (basic check)
     if (!ALLOWED_TYPES.includes(file.type)) {
       return NextResponse.json(
@@ -46,18 +54,10 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const actualType = getFileTypeFromBuffer(buffer);
-    
+
     if (!actualType || !ALLOWED_TYPES.includes(actualType)) {
       return NextResponse.json(
         { error: 'Invalid file content. File does not match declared type.' },
-        { status: 400 }
-      );
-    }
-
-    // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { error: 'File too large. Maximum size is 5MB.' },
         { status: 400 }
       );
     }

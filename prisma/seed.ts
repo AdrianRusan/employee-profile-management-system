@@ -42,6 +42,8 @@ async function main() {
       emailVerified: true,
       emailVerifiedAt: new Date(),
       status: 'ACTIVE' as const,
+      twoFactorEnabled: false,  // Disable 2FA for testing
+      twoFactorSecret: null,
     },
     {
       email: 'david@example.com',
@@ -57,6 +59,8 @@ async function main() {
       emailVerified: true,
       emailVerifiedAt: new Date(),
       status: 'ACTIVE' as const,
+      twoFactorEnabled: false,  // Disable 2FA for testing
+      twoFactorSecret: null,
     },
     {
       email: 'sarah@example.com',
@@ -72,6 +76,8 @@ async function main() {
       emailVerified: true,
       emailVerifiedAt: new Date(),
       status: 'ACTIVE' as const,
+      twoFactorEnabled: false,  // Disable 2FA for testing
+      twoFactorSecret: null,
     },
     {
       email: 'john@example.com',
@@ -87,6 +93,8 @@ async function main() {
       emailVerified: true,
       emailVerifiedAt: new Date(),
       status: 'ACTIVE' as const,
+      twoFactorEnabled: false,  // Disable 2FA for testing
+      twoFactorSecret: null,
     },
     {
       email: 'alice@example.com',
@@ -102,6 +110,8 @@ async function main() {
       emailVerified: true,
       emailVerifiedAt: new Date(),
       status: 'ACTIVE' as const,
+      twoFactorEnabled: false,  // Disable 2FA for testing
+      twoFactorSecret: null,
     },
   ];
 
@@ -113,10 +123,16 @@ async function main() {
           organizationId: organization.id
         }
       },
-      update: {},
+      update: {
+        // Reset 2FA on seed to ensure test users can login without 2FA
+        twoFactorEnabled: false,
+        twoFactorSecret: null,
+        // Also reset password to known value
+        passwordHash,
+      },
       create: user,
     });
-    console.log(`✓ Created user: ${user.name} (${user.email})`);
+    console.log(`✓ Created/updated user: ${user.name} (${user.email})`);
   }
 
   // Get created users for relationships using findFirst

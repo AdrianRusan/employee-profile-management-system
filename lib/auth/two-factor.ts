@@ -1,5 +1,6 @@
 import { authenticator } from 'otplib';
 import QRCode from 'qrcode';
+import { randomBytes } from 'crypto';
 
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || 'Employee Hub';
 
@@ -46,9 +47,10 @@ export function generateBackupCodes(count: number = 10): string[] {
   const charset = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude confusing characters (0, O, 1, I)
 
   for (let i = 0; i < count; i++) {
-    // Generate 8-character alphanumeric codes
-    const code = Array.from({ length: 8 }, () =>
-      charset[Math.floor(Math.random() * charset.length)]
+    // Generate 8-character alphanumeric codes using cryptographically secure random
+    const randomValues = randomBytes(8);
+    const code = Array.from(randomValues, (byte) =>
+      charset[byte % charset.length]
     ).join('');
     codes.push(code);
   }

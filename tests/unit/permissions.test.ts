@@ -7,19 +7,23 @@ describe('Permissions.user.viewSensitive', () => {
   const employee: PermissionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'employee@test.com' };
   const anotherEmployee: PermissionUser = { id: '3', role: 'EMPLOYEE' as Role, email: 'other@test.com' };
 
-  describe('Manager permissions', () => {
-    it('allows managers to view any employee sensitive data', () => {
-      expect(Permissions.user.viewSensitive(manager, employee)).toBe(true);
-      expect(Permissions.user.viewSensitive(manager, anotherEmployee)).toBe(true);
+  // Note: Frontend permission checks only allow self-access for viewSensitive.
+  // Server-side validates manager permissions with department checks.
+  describe('Manager permissions (frontend only allows self)', () => {
+    it('denies managers viewing other employees sensitive data (server validates)', () => {
+      // Frontend returns false; server handles manager access with department validation
+      expect(Permissions.user.viewSensitive(manager, employee)).toBe(false);
+      expect(Permissions.user.viewSensitive(manager, anotherEmployee)).toBe(false);
     });
 
     it('allows managers to view their own sensitive data', () => {
       expect(Permissions.user.viewSensitive(manager, manager)).toBe(true);
     });
 
-    it('allows managers to view other managers sensitive data', () => {
+    it('denies managers viewing other managers sensitive data (server validates)', () => {
       const anotherManager: PermissionUser = { id: '4', role: 'MANAGER' as Role, email: 'manager2@test.com' };
-      expect(Permissions.user.viewSensitive(manager, anotherManager)).toBe(true);
+      // Frontend returns false; server handles manager access with department validation
+      expect(Permissions.user.viewSensitive(manager, anotherManager)).toBe(false);
     });
   });
 
@@ -43,9 +47,12 @@ describe('Permissions.user.edit', () => {
   const employee: PermissionUser = { id: '2', role: 'EMPLOYEE' as Role, email: 'employee@test.com' };
   const anotherEmployee: PermissionUser = { id: '3', role: 'EMPLOYEE' as Role, email: 'other@test.com' };
 
-  it('allows managers to edit any user profile', () => {
-    expect(Permissions.user.edit(manager, employee)).toBe(true);
-    expect(Permissions.user.edit(manager, anotherEmployee)).toBe(true);
+  // Note: Frontend permission checks only allow self-edit.
+  // Server-side validates manager permissions with department checks.
+  it('denies managers editing other user profiles on frontend (server validates)', () => {
+    // Frontend returns false; server handles manager access with department validation
+    expect(Permissions.user.edit(manager, employee)).toBe(false);
+    expect(Permissions.user.edit(manager, anotherEmployee)).toBe(false);
   });
 
   it('allows managers to edit their own profile', () => {

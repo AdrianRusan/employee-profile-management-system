@@ -39,6 +39,8 @@ COPY . .
 # Set production environment for build
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+# Signal to Next.js config to enable standalone output (works in Linux/Docker)
+ENV DOCKER_BUILD=true
 
 # Build the application
 RUN npm run build

@@ -95,15 +95,11 @@ export const userRouter = router({
 
   /**
    * Get list of unique departments
+   * Uses optimized repository method that queries distinct values directly
    */
-  getDepartments: protectedProcedure.query(async ({ ctx }) => {
-    const result = await container.listUsersUseCase.execute({
-      requesterId: ctx.session.userId,
-    });
-
-    // Extract unique departments from users
-    const departments = [...new Set(result.users.map(u => u.department).filter(Boolean))];
-    return departments;
+  getDepartments: protectedProcedure.query(async () => {
+    // Use repository's optimized getDepartments() instead of fetching all users
+    return container.userRepository.getDepartments();
   }),
 
   /**

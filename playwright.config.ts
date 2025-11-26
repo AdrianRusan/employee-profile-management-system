@@ -85,5 +85,9 @@ export default defineConfig({
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000, // 2 minutes for server startup
+    env: {
+      // Disable rate limiting for E2E tests
+      PLAYWRIGHT_TEST: 'true',
+    },
   },
 })

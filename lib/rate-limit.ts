@@ -204,6 +204,16 @@ export async function checkRateLimit(
   identifier: string,
   preset: keyof typeof RATE_LIMITS = 'api'
 ): Promise<RateLimitResult> {
+  // Skip rate limiting in test environment (for E2E tests)
+  if (process.env.E2E_TEST === 'true' || process.env.PLAYWRIGHT_TEST === 'true') {
+    return {
+      success: true,
+      limit: 999999,
+      remaining: 999999,
+      reset: Date.now() + 60000,
+    };
+  }
+
   const config = RATE_LIMITS[preset];
   const redis = getRateLimiter();
 

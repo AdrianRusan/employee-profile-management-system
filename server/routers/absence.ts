@@ -46,9 +46,10 @@ export const absenceRouter = router({
         // Filter to only managers
         const departmentManagers = managers.filter((u) => u.isManager());
 
-        // Send email to each manager
-        for (const manager of departmentManagers) {
-          const emailResult = await sendAbsenceRequestEmail(
+        // Send emails and notifications in parallel for better performance
+        const notificationPromises = departmentManagers.map(async (manager) => {
+          // Send email (non-blocking, log failures)
+          const emailPromise = sendAbsenceRequestEmail(
             manager.email.value,
             manager.name,
             employee.name,
@@ -56,25 +57,29 @@ export const absenceRouter = router({
             input.endDate,
             input.reason,
             absence.id
-          );
-          if (!emailResult.success) {
-            ctx.logger.warn(
-              { managerId: manager.id, error: emailResult.error },
-              'Failed to send absence request email to manager'
-            );
-          }
-        }
+          ).then((emailResult) => {
+            if (!emailResult.success) {
+              ctx.logger.warn(
+                { managerId: manager.id, error: emailResult.error },
+                'Failed to send absence request email to manager'
+              );
+            }
+          });
 
-        // Create notification for managers
-        for (const manager of departmentManagers) {
-          await container.createNotificationUseCase.execute({
+          // Create notification
+          const notificationPromise = container.createNotificationUseCase.execute({
             userId: manager.id,
             type: 'ABSENCE_PENDING',
             title: 'New Time Off Request',
             message: `${employee.name} has requested time off`,
             data: { absenceId: absence.id, employeeId: ctx.session.userId },
           });
-        }
+
+          return Promise.all([emailPromise, notificationPromise]);
+        });
+
+        // Wait for all parallel operations (use allSettled to not fail on individual errors)
+        await Promise.allSettled(notificationPromises);
       }
 
       return absence;
@@ -221,18 +226,23 @@ export const absenceRouter = router({
 
   /**
    * Get all upcoming absences (for calendar view)
+   * Uses optimized repository query that filters by date at database level
    */
-  getUpcoming: protectedProcedure.query(async ({ ctx }) => {
-    const today = new Date();
-    const result = await container.getAbsencesUseCase.execute({
-      status: AbsenceStatus.APPROVED,
-    });
+  getUpcoming: protectedProcedure.query(async () => {
+    // Use repository's optimized findUpcoming() instead of fetching all and filtering in-memory
+    const absences = await container.absenceRepository.findUpcoming(10);
 
-    // Filter for upcoming absences (starting from today)
-    const upcomingAbsences = result.absences.filter(
-      (absence) => new Date(absence.startDate) >= today
-    );
-
-    return upcomingAbsences.slice(0, 10);
+    return absences.map((absence) => ({
+      id: absence.id,
+      userId: absence.userId,
+      startDate: absence.dateRange.start,
+      endDate: absence.dateRange.end,
+      reason: absence.reason,
+      status: absence.status,
+      workingDays: absence.getWorkingDays(),
+      totalDays: absence.getTotalDays(),
+      createdAt: absence.createdAt,
+      updatedAt: absence.updatedAt,
+    }));
   }),
 });

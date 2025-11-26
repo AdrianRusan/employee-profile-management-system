@@ -1,48 +1,85 @@
-import { Page } from '@playwright/test';
+import { Page, expect } from '@playwright/test';
+
+// Demo password for all seed users (matches prisma/seed.ts)
+const DEMO_PASSWORD = 'Password123!';
 
 /**
- * Login helper - uses email-only authentication
+ * Login helper - uses email + password authentication
  */
-export async function login(page: Page, email: string, role?: 'MANAGER' | 'EMPLOYEE' | 'COWORKER') {
-  await page.goto('/login', { waitUntil: 'domcontentloaded', timeout: 15000 });
+export async function login(page: Page, email: string) {
+  await page.goto('/login', { waitUntil: 'networkidle', timeout: 30000 });
+
+  // Wait for login form to be ready
+  const emailInput = page.locator('input[type="email"]');
+  const passwordInput = page.locator('input[type="password"]');
+  const submitButton = page.locator('button[type="submit"]');
+
+  await emailInput.waitFor({ state: 'visible', timeout: 10000 });
+  await passwordInput.waitFor({ state: 'visible', timeout: 10000 });
 
   // Fill email
-  await page.fill('input[type="email"]', email);
+  await emailInput.fill(email);
 
-  // Select role if specified (otherwise uses profile default)
-  if (role) {
-    await page.selectOption('select', role);
-  }
+  // Fill password
+  await passwordInput.fill(DEMO_PASSWORD);
 
-  // Click sign in
-  await page.click('button[type="submit"]');
+  // Click sign in and wait for navigation
+  await Promise.all([
+    page.waitForURL(/\/dashboard/, { timeout: 30000 }),
+    submitButton.click(),
+  ]);
 
-  // Wait for redirect to dashboard
-  await page.waitForURL('/dashboard', { timeout: 15000 });
+  // Wait for dashboard to fully load
+  await page.waitForLoadState('networkidle', { timeout: 15000 });
 
-  // Wait for dashboard to fully load (all network requests complete)
-  await page.waitForLoadState('networkidle', { timeout: 10000 });
+  // Verify we're on dashboard by checking for a key element
+  await expect(page.locator('h1:has-text("Dashboard")')).toBeVisible({ timeout: 15000 });
 }
 
 /**
- * Login as manager
+ * Login with custom password (for testing different scenarios)
+ */
+export async function loginWithPassword(page: Page, email: string, password: string) {
+  await page.goto('/login', { waitUntil: 'networkidle', timeout: 30000 });
+
+  const emailInput = page.locator('input[type="email"]');
+  const passwordInput = page.locator('input[type="password"]');
+  const submitButton = page.locator('button[type="submit"]');
+
+  await emailInput.waitFor({ state: 'visible', timeout: 10000 });
+  await passwordInput.waitFor({ state: 'visible', timeout: 10000 });
+
+  await emailInput.fill(email);
+  await passwordInput.fill(password);
+
+  await Promise.all([
+    page.waitForURL(/\/dashboard/, { timeout: 30000 }),
+    submitButton.click(),
+  ]);
+
+  await page.waitForLoadState('networkidle', { timeout: 15000 });
+  await expect(page.locator('h1:has-text("Dashboard")')).toBeVisible({ timeout: 15000 });
+}
+
+/**
+ * Login as manager (emily@example.com)
  */
 export async function loginAsManager(page: Page) {
-  await login(page, 'emily@example.com', 'MANAGER');
+  await login(page, 'emily@example.com');
 }
 
 /**
- * Login as employee
+ * Login as employee (david@example.com)
  */
 export async function loginAsEmployee(page: Page) {
-  await login(page, 'david@example.com', 'EMPLOYEE');
+  await login(page, 'david@example.com');
 }
 
 /**
- * Login as coworker
+ * Login as coworker (sarah@example.com)
  */
 export async function loginAsCoworker(page: Page) {
-  await login(page, 'sarah@example.com', 'COWORKER');
+  await login(page, 'sarah@example.com');
 }
 
 /**

@@ -1,10 +1,16 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
+// Standalone output is needed for Docker but causes issues on Windows
+// due to Turbopack generating files with colons in names (e.g., node:inspector)
+// Windows doesn't allow colons in filenames
+const isWindows = process.platform === 'win32';
+const isDocker = process.env.DOCKER_BUILD === 'true';
+
 const nextConfig: NextConfig = {
-  // Enable standalone output for Docker deployment
-  // This creates a minimal production build with all dependencies
-  output: 'standalone',
+  // Enable standalone output for Docker deployment only
+  // Skip on Windows to avoid EINVAL errors with colon-containing filenames
+  ...((!isWindows || isDocker) && { output: 'standalone' as const }),
 
   // Turbopack configuration (moved to top-level in Next.js 16)
   turbopack: {
@@ -42,6 +48,22 @@ const nextConfig: NextConfig = {
           {
             key: 'Strict-Transport-Security',
             value: 'max-age=63072000; includeSubDomains; preload',
+          },
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // unsafe-eval needed for Next.js dev, unsafe-inline for inline scripts
+              "style-src 'self' 'unsafe-inline'", // unsafe-inline needed for Tailwind/styled-components
+              "img-src 'self' data: https: blob:",
+              "font-src 'self' data:",
+              "connect-src 'self' https://api.resend.com https://*.sentry.io https://*.upstash.io",
+              "frame-ancestors 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "object-src 'none'",
+              "upgrade-insecure-requests",
+            ].join('; '),
           },
         ],
       },
