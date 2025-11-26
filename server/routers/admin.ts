@@ -97,7 +97,10 @@ export const adminRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const where: any = {
+      const where: {
+        deletedAt: null;
+        OR?: Array<{ name?: { contains: string; mode: 'insensitive' }; slug?: { contains: string; mode: 'insensitive' } }>;
+      } = {
         deletedAt: null,
       };
 
@@ -181,7 +184,12 @@ export const adminRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const where: any = {
+      const where: {
+        deletedAt: null;
+        organizationId?: string;
+        role?: 'EMPLOYEE' | 'MANAGER' | 'COWORKER';
+        OR?: Array<{ name?: { contains: string; mode: 'insensitive' }; email?: { contains: string; mode: 'insensitive' } }>;
+      } = {
         deletedAt: null,
       };
 
