@@ -24,7 +24,6 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Search, Users } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import type { Role, UserStatus } from '@prisma/client';
 
 // Type for user with organization from admin.listAllUsers
 // Note: Dates are serialized as strings over tRPC
@@ -32,9 +31,9 @@ type UserWithOrganization = {
   id: string;
   name: string;
   email: string;
-  role: Role;
+  role: 'EMPLOYEE' | 'MANAGER' | 'COWORKER';
   department: string | null;
-  status: UserStatus;
+  status: 'ACTIVE' | 'INACTIVE' | 'PENDING_VERIFICATION';
   lastLoginAt: string | null;
   createdAt: string;
   organization: {
