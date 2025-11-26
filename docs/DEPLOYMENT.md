@@ -374,9 +374,6 @@ scrape_configs:
 | `rate_limit_exceeded_total` | rate > 100/min |
 | `db_query_duration_seconds` | p99 > 1s |
 
-### Grafana Dashboard
-
-Import the provided dashboard from `/docs/grafana-dashboard.json`.
 
 ### Alerting Rules
 
