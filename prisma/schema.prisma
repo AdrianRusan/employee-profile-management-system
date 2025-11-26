@@ -10,11 +10,66 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// =============================================================================
+// Multi-Tenancy Models
+// =============================================================================
+
+model Organization {
+  id              String    @id @default(cuid())
+  name            String
+  slug            String    @unique  // company.yourapp.com or yourapp.com/company
+  logo            String?
+  domain          String?   @unique  // For SSO domain verification
+  settings        Json      @default("{}")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  users           User[]
+  invitations     Invitation[]
+  auditLogs       AuditLog[]
+  feedback        Feedback[]
+  absenceRequests AbsenceRequest[]
+  notifications   Notification[]
+
+  @@index([slug])
+  @@index([domain])
+}
+
+model Invitation {
+  id             String    @id @default(cuid())
+  email          String
+  role           Role      @default(EMPLOYEE)
+  token          String    @unique
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  organizationId String
+  invitedById    String
+  createdAt      DateTime  @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedBy      User         @relation("InvitationsSent", fields: [invitedById], references: [id])
+
+  @@unique([email, organizationId])
+  @@index([token])
+  @@index([organizationId])
+  @@index([expiresAt])
+}
+
 model User {
   id                    String            @id @default(cuid())
-  email                 String            @unique
+  organizationId        String
+  email                 String
+  passwordHash          String?
+  emailVerified         Boolean           @default(false)
+  emailVerifiedAt       DateTime?
+  twoFactorEnabled      Boolean           @default(false)
+  twoFactorSecret       String?           // Encrypted TOTP secret
+  backupCodes           String[]          @default([]) // Hashed backup codes
+  lastLoginAt           DateTime?
   name                  String
   role                  Role              @default(EMPLOYEE)
+  status                UserStatus        @default(ACTIVE)
   department            String?
   position              String?           // Job position/title
   title                 String?
@@ -34,22 +89,65 @@ model User {
   emergencyContactPhone String?
   performanceRating     Int?
   deletedAt             DateTime?
-  feedbackGiven         Feedback[]        @relation("FeedbackGiver")
-  feedbackReceived      Feedback[]        @relation("FeedbackReceiver")
-  absenceRequests       AbsenceRequest[]
   createdAt             DateTime          @default(now())
   updatedAt             DateTime          @updatedAt
 
-  @@index([email])
+  organization          Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  feedbackGiven         Feedback[]        @relation("FeedbackGiver")
+  feedbackReceived      Feedback[]        @relation("FeedbackReceiver")
+  absenceRequests       AbsenceRequest[]
+  notifications         Notification[]
+  sessions              Session[]
+  invitationsSent       Invitation[]      @relation("InvitationsSent")
+  oauthAccounts         OAuthAccount[]
+  trustedDevices        TrustedDevice[]
+
+  @@unique([email, organizationId])
+  @@index([organizationId])
   @@index([department])
   @@index([role])
   @@index([department, role])
   @@index([performanceRating])
   @@index([deletedAt])
+  @@index([name])                    // For name search
+  @@index([createdAt(sort: Desc)])   // For recent users listing
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  token        String   @unique
+  expiresAt    DateTime
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+model TrustedDevice {
+  id          String   @id @default(cuid())
+  userId      String
+  deviceToken String   @unique
+  deviceName  String?  // e.g., "Chrome on Windows"
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([deviceToken])
+  @@index([expiresAt])
 }
 
 model Feedback {
   id              String   @id @default(cuid())
+  organizationId  String
   content         String
   polishedContent String?
   isPolished      Boolean  @default(false)
@@ -61,6 +159,9 @@ model Feedback {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
   @@index([receiverId, createdAt(sort: Desc)])
   @@index([giverId])
   @@index([giverId, createdAt(sort: Desc)])
@@ -71,17 +172,21 @@ model Feedback {
 }
 
 model AbsenceRequest {
-  id        String        @id @default(cuid())
-  startDate DateTime
-  endDate   DateTime
-  reason    String
-  status    AbsenceStatus @default(PENDING)
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  deletedAt DateTime?
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  id             String        @id @default(cuid())
+  organizationId String
+  startDate      DateTime
+  endDate        DateTime
+  reason         String
+  status         AbsenceStatus @default(PENDING)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  deletedAt      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
   @@index([userId])
   @@index([status])
   @@index([userId, status])
@@ -91,14 +196,185 @@ model AbsenceRequest {
   @@index([userId, deletedAt])
 }
 
+model Notification {
+  id             String           @id @default(cuid())
+  organizationId String
+  type           NotificationType
+  title          String
+  message        String
+  read           Boolean          @default(false)
+  data           Json?
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  createdAt      DateTime         @default(now())
+
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([userId, read])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([createdAt])               // For cleanup of old notifications
+}
+
+// =============================================================================
+// Enums
+// =============================================================================
+
 enum Role {
   EMPLOYEE
   MANAGER
   COWORKER
 }
 
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  PENDING_VERIFICATION
+}
+
 enum AbsenceStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum NotificationType {
+  FEEDBACK_RECEIVED
+  ABSENCE_APPROVED
+  ABSENCE_REJECTED
+  ABSENCE_PENDING
+  SYSTEM
+}
+
+enum TokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  TWO_FACTOR
+}
+
+// =============================================================================
+// Audit Logging
+// =============================================================================
+// Tracks access and modifications to sensitive data for compliance
+// (GDPR Article 32, CCPA, SOC2)
+
+model AuditLog {
+  id             String       @id @default(cuid())
+  organizationId String?
+  action         AuditAction
+  entityType     String       // 'USER', 'FEEDBACK', 'ABSENCE', etc.
+  entityId       String       // ID of the affected entity
+  userId         String       // User who performed the action
+  userEmail      String       // Email for historical reference (user may be deleted)
+  userRole       String       // Role at time of action
+  ipAddress      String?      // Client IP address
+  userAgent      String?      // Browser/client info
+  oldValue       String?      // Previous value (encrypted for sensitive fields)
+  newValue       String?      // New value (encrypted for sensitive fields)
+  metadata       Json?        // Additional context
+  createdAt      DateTime     @default(now())
+
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([entityType, entityId])
+  @@index([action, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+}
+
+enum AuditAction {
+  // View actions
+  VIEW_PROFILE
+  VIEW_SENSITIVE_DATA    // SSN, salary viewed
+  VIEW_FEEDBACK
+  VIEW_ABSENCE
+
+  // Create actions
+  CREATE_USER
+  CREATE_FEEDBACK
+  CREATE_ABSENCE
+
+  // Update actions
+  UPDATE_PROFILE
+  UPDATE_SENSITIVE_DATA  // SSN, salary modified
+  UPDATE_FEEDBACK
+  UPDATE_ABSENCE_STATUS
+
+  // Delete actions
+  DELETE_USER
+  DELETE_FEEDBACK
+  DELETE_ABSENCE
+  RESTORE_USER
+
+  // Auth actions
+  LOGIN_SUCCESS
+  LOGIN_FAILURE
+  LOGOUT
+  SESSION_EXPIRED
+
+  // Admin actions
+  EXPORT_DATA
+  BULK_OPERATION
+}
+
+// =============================================================================
+// Login Attempt Tracking (Account Lockout)
+// =============================================================================
+// Tracks login attempts to prevent brute force attacks
+
+model LoginAttempt {
+  id         String   @id @default(cuid())
+  email      String
+  successful Boolean
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([email, createdAt(sort: Desc)])
+  @@index([email, successful])
+  @@index([ipAddress, createdAt(sort: Desc)])
+}
+
+// =============================================================================
+// Verification Tokens
+// =============================================================================
+// Tokens for email verification, password reset, and two-factor authentication
+
+model VerificationToken {
+  id         String   @id @default(cuid())
+  identifier String   // email address
+  token      String   @unique
+  type       TokenType
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@unique([identifier, token])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+// =============================================================================
+// OAuth Accounts
+// =============================================================================
+// Links users to their OAuth provider accounts (Google, GitHub, etc.)
+
+model OAuthAccount {
+  id                String   @id @default(cuid())
+  userId            String
+  provider          String   // 'google' | 'github'
+  providerAccountId String   // Provider's unique ID for this account
+  accessToken       String?  // Encrypted access token
+  refreshToken      String?  // Encrypted refresh token
+  tokenExpiresAt    DateTime?
+  scope             String?
+  idToken           String?  // OpenID Connect ID token
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@index([provider])
 }

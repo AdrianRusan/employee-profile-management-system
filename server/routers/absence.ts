@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { router, protectedProcedure } from '../trpc';
+import { router, protectedProcedure, managerProcedure } from '../trpc';
 import {
   absenceRequestSchema,
   updateAbsenceStatusSchema,
@@ -7,6 +7,10 @@ import {
 import { paginationSchema } from '@/lib/pagination';
 import { container } from '@/src/infrastructure/di/container';
 import { AbsenceStatus } from '@/src/domain/entities/Absence';
+import {
+  sendAbsenceStatusEmail,
+  sendAbsenceRequestEmail,
+} from '@/lib/email/send-emails';
 
 /**
  * Absence router for time-off request management
@@ -22,12 +26,58 @@ export const absenceRouter = router({
   create: protectedProcedure
     .input(absenceRequestSchema)
     .mutation(async ({ ctx, input }) => {
-      return container.createAbsenceUseCase.execute({
+      const absence = await container.createAbsenceUseCase.execute({
         userId: ctx.session.userId,
         startDate: input.startDate,
         endDate: input.endDate,
         reason: input.reason,
       });
+
+      // Get employee info for email
+      const employee = await container.userRepository.findById(ctx.session.userId);
+
+      // Notify managers via email about new absence request
+      if (employee) {
+        // Find managers in the same department or all managers if no department
+        const { users: managers } = await container.userRepository.findAll({
+          department: employee.department || undefined,
+        });
+
+        // Filter to only managers
+        const departmentManagers = managers.filter((u) => u.isManager());
+
+        // Send email to each manager
+        for (const manager of departmentManagers) {
+          const emailResult = await sendAbsenceRequestEmail(
+            manager.email.value,
+            manager.name,
+            employee.name,
+            input.startDate,
+            input.endDate,
+            input.reason,
+            absence.id
+          );
+          if (!emailResult.success) {
+            ctx.logger.warn(
+              { managerId: manager.id, error: emailResult.error },
+              'Failed to send absence request email to manager'
+            );
+          }
+        }
+
+        // Create notification for managers
+        for (const manager of departmentManagers) {
+          await container.createNotificationUseCase.execute({
+            userId: manager.id,
+            type: 'ABSENCE_PENDING',
+            title: 'New Time Off Request',
+            message: `${employee.name} has requested time off`,
+            data: { absenceId: absence.id, employeeId: ctx.session.userId },
+          });
+        }
+      }
+
+      return absence;
     }),
 
   /**
@@ -55,39 +105,96 @@ export const absenceRouter = router({
 
   /**
    * Get all pending absence requests (manager-only)
+   * Requires MANAGER role to view all team absences
    */
-  getAll: protectedProcedure
+  getAll: managerProcedure
     .input(
       paginationSchema.extend({
         status: z.enum(['PENDING', 'APPROVED', 'REJECTED']).optional(),
       })
     )
     .query(async ({ ctx, input }) => {
+      // Get current user to check department
+      const currentUser = await container.userRepository.findById(ctx.session.userId);
+
+      // Determine if we need to filter by department
+      // Only managers (not admins) should be filtered by their department
+      const shouldFilterByDepartment =
+        ctx.session.role === 'MANAGER' &&
+        currentUser?.department;
+
       return container.getAbsencesUseCase.execute({
         status: input.status ? AbsenceStatus[input.status] : undefined,
         skip: input.skip,
         take: input.limit,
+        includeUser: true,
+        department: shouldFilterByDepartment ? currentUser.department : undefined,
       });
     }),
 
   /**
    * Update absence request status (approve/reject)
+   * Requires MANAGER role - enforced at router level for early rejection
    */
-  updateStatus: protectedProcedure
+  updateStatus: managerProcedure
     .input(updateAbsenceStatusSchema)
     .mutation(async ({ ctx, input }) => {
+      let result;
+      let notificationType: 'ABSENCE_APPROVED' | 'ABSENCE_REJECTED';
+      let notificationTitle: string;
+      let notificationMessage: string;
+
       if (input.status === 'APPROVED') {
-        return container.approveAbsenceUseCase.execute({
+        result = await container.approveAbsenceUseCase.execute({
           absenceId: input.id,
           approverId: ctx.session.userId,
         });
+        notificationType = 'ABSENCE_APPROVED';
+        notificationTitle = 'Time Off Approved';
+        notificationMessage = `Your time off request has been approved`;
       } else if (input.status === 'REJECTED') {
-        return container.rejectAbsenceUseCase.execute({
+        result = await container.rejectAbsenceUseCase.execute({
           absenceId: input.id,
           rejectorId: ctx.session.userId,
         });
+        notificationType = 'ABSENCE_REJECTED';
+        notificationTitle = 'Time Off Rejected';
+        notificationMessage = `Your time off request has been rejected`;
+      } else {
+        throw new Error('Invalid status');
       }
-      throw new Error('Invalid status');
+
+      // Create notification for the absence request owner
+      await container.createNotificationUseCase.execute({
+        userId: result.userId,
+        type: notificationType,
+        title: notificationTitle,
+        message: notificationMessage,
+        data: { absenceId: input.id },
+      });
+
+      // Send email notification to the employee about status change
+      const employee = await container.userRepository.findById(result.userId);
+      const manager = await container.userRepository.findById(ctx.session.userId);
+
+      if (employee && manager) {
+        const emailResult = await sendAbsenceStatusEmail(
+          employee.email.value,
+          employee.name,
+          input.status === 'APPROVED' ? 'approved' : 'rejected',
+          result.startDate,
+          result.endDate,
+          manager.name
+        );
+        if (!emailResult.success) {
+          ctx.logger.warn(
+            { employeeId: result.userId, error: emailResult.error },
+            'Failed to send absence status email'
+          );
+        }
+      }
+
+      return result;
     }),
 
   /**

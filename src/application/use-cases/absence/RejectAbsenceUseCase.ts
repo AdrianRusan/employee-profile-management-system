@@ -62,7 +62,20 @@ export class RejectAbsenceUseCase {
       throw new Error('Absence owner not found');
     }
 
-    // 4. Check if rejector can reject this specific absence
+    // 4. SECURITY: Verify organization boundary - rejector and owner must be in the same organization
+    if (rejector.organizationId !== owner.organizationId) {
+      this.logger.warn(
+        {
+          rejectorId: rejector.id,
+          rejectorOrg: rejector.organizationId,
+          ownerOrg: owner.organizationId,
+        },
+        'Cross-organization absence rejection attempt blocked'
+      );
+      throw new Error('Cannot reject absences from different organizations');
+    }
+
+    // 5. Check if rejector can reject this specific absence
     // Managers can only reject absences in their department
     if (rejector.isManager()) {
       if (rejector.department !== owner.department) {
@@ -70,7 +83,7 @@ export class RejectAbsenceUseCase {
       }
     }
 
-    // 5. Prevent self-rejection
+    // 6. Prevent self-rejection
     if (rejector.id === owner.id) {
       throw new Error('Cannot reject your own absence request');
     }

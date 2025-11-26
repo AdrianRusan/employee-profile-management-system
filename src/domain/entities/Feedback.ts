@@ -1,5 +1,6 @@
 export interface FeedbackProps {
   id: string;
+  organizationId: string;
   giverId: string;
   receiverId: string;
   content: string;
@@ -26,6 +27,7 @@ export class Feedback {
    * Factory method to create new Feedback
    */
   static create(
+    organizationId: string,
     giverId: string,
     receiverId: string,
     content: string,
@@ -33,6 +35,7 @@ export class Feedback {
   ): Feedback {
     return new Feedback({
       id: id || crypto.randomUUID(),
+      organizationId,
       giverId,
       receiverId,
       content,
@@ -162,6 +165,10 @@ export class Feedback {
    */
   get id(): string {
     return this.props.id;
+  }
+
+  get organizationId(): string {
+    return this.props.organizationId;
   }
 
   get giverId(): string {

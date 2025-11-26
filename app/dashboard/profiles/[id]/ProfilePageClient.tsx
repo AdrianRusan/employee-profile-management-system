@@ -31,7 +31,10 @@ export function ProfilePageClient({ user }: ProfilePageClientProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   // Get current user session
-  const { data: session } = trpc.auth.getCurrentUser.useQuery();
+  const { data: session } = trpc.auth.getCurrentUser.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000, // 5 minutes - user data rarely changes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+  });
 
   if (!session || !user) {
     return <div>Loading...</div>;

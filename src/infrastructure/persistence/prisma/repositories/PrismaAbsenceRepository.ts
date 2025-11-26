@@ -3,6 +3,7 @@ import { IAbsenceRepository } from '../../../../domain/repositories/IAbsenceRepo
 import { Absence, AbsenceStatus } from '../../../../domain/entities/Absence';
 import { DateRange } from '../../../../domain/value-objects/DateRange';
 import { AbsenceMapper } from '../mappers/AbsenceMapper';
+import { getCurrentTenant, getTenantOrNull } from '@/lib/tenant-context';
 
 /**
  * Prisma implementation of IAbsenceRepository
@@ -12,8 +13,12 @@ export class PrismaAbsenceRepository implements IAbsenceRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   async findById(id: string): Promise<Absence | null> {
-    const prismaAbsence = await this.prisma.absenceRequest.findUnique({
-      where: { id },
+    const tenant = getTenantOrNull();
+    const prismaAbsence = await this.prisma.absenceRequest.findFirst({
+      where: {
+        id,
+        ...(tenant && { organizationId: tenant.organizationId }),
+      },
     });
 
     return prismaAbsence ? AbsenceMapper.toDomain(prismaAbsence) : null;
@@ -26,7 +31,12 @@ export class PrismaAbsenceRepository implements IAbsenceRepository {
       status?: AbsenceStatus;
     }
   ): Promise<Absence[]> {
+    const tenant = getTenantOrNull();
     const where: any = { userId };
+
+    if (tenant) {
+      where.organizationId = tenant.organizationId;
+    }
 
     if (!options?.includeDeleted) {
       where.deletedAt = null;
@@ -49,8 +59,15 @@ export class PrismaAbsenceRepository implements IAbsenceRepository {
     includeDeleted?: boolean;
     skip?: number;
     take?: number;
-  }): Promise<{ absences: Absence[]; total: number }> {
+    includeUser?: boolean;
+    department?: string;
+  }): Promise<{ absences: Absence[]; total: number; users?: any[] }> {
+    const tenant = getTenantOrNull();
     const where: any = {};
+
+    if (tenant) {
+      where.organizationId = tenant.organizationId;
+    }
 
     if (!options?.includeDeleted) {
       where.deletedAt = null;
@@ -60,12 +77,32 @@ export class PrismaAbsenceRepository implements IAbsenceRepository {
       where.status = this.mapStatusToPrisma(options.status);
     }
 
+    // Filter by department if provided
+    if (options?.department) {
+      where.user = { department: options.department };
+    }
+
+    const include = options?.includeUser
+      ? {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              department: true,
+              avatar: true,
+            },
+          },
+        }
+      : undefined;
+
     const [prismaAbsences, total] = await Promise.all([
       this.prisma.absenceRequest.findMany({
         where,
         skip: options?.skip,
         take: options?.take,
         orderBy: { startDate: 'desc' },
+        include,
       }),
       this.prisma.absenceRequest.count({ where }),
     ]);
@@ -73,6 +110,7 @@ export class PrismaAbsenceRepository implements IAbsenceRepository {
     return {
       absences: prismaAbsences.map((a) => AbsenceMapper.toDomain(a)),
       total,
+      users: options?.includeUser ? prismaAbsences.map((a: any) => a.user) : undefined,
     };
   }
 
@@ -81,33 +119,45 @@ export class PrismaAbsenceRepository implements IAbsenceRepository {
     dateRange: DateRange,
     excludeId?: string
   ): Promise<Absence[]> {
-    const prismaAbsences = await this.prisma.absenceRequest.findMany({
-      where: {
-        userId,
-        id: excludeId ? { not: excludeId } : undefined,
-        deletedAt: null,
-        status: { in: ['PENDING', 'APPROVED'] },
-        // Find absences that overlap with the given date range
-        AND: [
-          { startDate: { lte: dateRange.end } },
-          { endDate: { gte: dateRange.start } },
-        ],
-      },
-    });
+    const tenant = getTenantOrNull();
+    const where: any = {
+      userId,
+      id: excludeId ? { not: excludeId } : undefined,
+      deletedAt: null,
+      status: { in: ['PENDING', 'APPROVED'] },
+      // Find absences that overlap with the given date range
+      AND: [
+        { startDate: { lte: dateRange.end } },
+        { endDate: { gte: dateRange.start } },
+      ],
+    };
+
+    if (tenant) {
+      where.organizationId = tenant.organizationId;
+    }
+
+    const prismaAbsences = await this.prisma.absenceRequest.findMany({ where });
 
     return prismaAbsences.map((a) => AbsenceMapper.toDomain(a));
   }
 
   async findUpcoming(limit: number = 10): Promise<Absence[]> {
+    const tenant = getTenantOrNull();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    const where: any = {
+      status: 'APPROVED',
+      deletedAt: null,
+      startDate: { gte: today },
+    };
+
+    if (tenant) {
+      where.organizationId = tenant.organizationId;
+    }
+
     const prismaAbsences = await this.prisma.absenceRequest.findMany({
-      where: {
-        status: 'APPROVED',
-        deletedAt: null,
-        startDate: { gte: today },
-      },
+      where,
       orderBy: { startDate: 'asc' },
       take: limit,
     });
@@ -116,7 +166,13 @@ export class PrismaAbsenceRepository implements IAbsenceRepository {
   }
 
   async save(absence: Absence): Promise<Absence> {
+    const tenant = getCurrentTenant(); // Throws if no tenant for mutations
     const data = AbsenceMapper.toPrisma(absence);
+
+    // Ensure organizationId matches tenant
+    if (data.organizationId !== tenant.organizationId) {
+      throw new Error('Absence organizationId must match current tenant');
+    }
 
     const saved = await this.prisma.absenceRequest.upsert({
       where: { id: absence.id },
@@ -135,7 +191,13 @@ export class PrismaAbsenceRepository implements IAbsenceRepository {
   }
 
   async delete(id: string): Promise<void> {
-    await this.prisma.absenceRequest.delete({ where: { id } });
+    const tenant = getCurrentTenant(); // Throws if no tenant for mutations
+    await this.prisma.absenceRequest.deleteMany({
+      where: {
+        id,
+        organizationId: tenant.organizationId,
+      },
+    });
   }
 
   async getStatistics(userId: string): Promise<{

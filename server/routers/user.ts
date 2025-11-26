@@ -130,4 +130,61 @@ export const userRouter = router({
         requesterId: ctx.session.userId,
       });
     }),
+
+  /**
+   * Update user role (managers only)
+   */
+  updateRole: managerProcedure
+    .input(
+      z.object({
+        id: z.string().cuid(),
+        role: z.enum(['EMPLOYEE', 'MANAGER', 'COWORKER']),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Prevent changing own role
+      if (input.id === ctx.session.userId) {
+        throw new Error('Cannot change your own role');
+      }
+
+      // SECURITY: First verify the target user belongs to the same organization
+      const targetUser = await ctx.prisma.user.findFirst({
+        where: {
+          id: input.id,
+          organizationId: ctx.session.organizationId, // Enforce organization boundary
+        },
+        select: { id: true, role: true },
+      });
+
+      if (!targetUser) {
+        ctx.logger.warn({
+          action: 'cross_org_role_update_attempt',
+          targetUserId: input.id,
+          attemptedBy: ctx.session.userId,
+        }, 'Cross-organization role update attempt blocked');
+        throw new Error('User not found in your organization');
+      }
+
+      // SECURITY: Use updateMany with organizationId for defense-in-depth
+      const result = await ctx.prisma.user.updateMany({
+        where: {
+          id: input.id,
+          organizationId: ctx.session.organizationId,
+        },
+        data: { role: input.role },
+      });
+
+      if (result.count === 0) {
+        throw new Error('Failed to update user role');
+      }
+
+      ctx.logger.info({
+        action: 'role_updated',
+        userId: input.id,
+        newRole: input.role,
+        updatedBy: ctx.session.userId,
+      }, 'User role updated');
+
+      return { ...targetUser, role: input.role };
+    }),
 });

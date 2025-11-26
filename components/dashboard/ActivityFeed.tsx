@@ -35,13 +35,17 @@ export function ActivityFeed({ limit = 10 }: ActivityFeedProps) {
   );
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <ActivityIcon className="h-5 w-5 text-gray-600" />
-          <CardTitle>Recent Activity</CardTitle>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-500/10">
+            <ActivityIcon className="h-5 w-5 text-rose-500" />
+          </div>
+          <div>
+            <CardTitle className="text-lg">Recent Activity</CardTitle>
+            <CardDescription>Your latest feedback and time off updates</CardDescription>
+          </div>
         </div>
-        <CardDescription>Your latest feedback and time off updates</CardDescription>
       </CardHeader>
       <CardContent aria-live="polite" aria-busy={isLoading}>
         {isLoading && (
@@ -60,8 +64,8 @@ export function ActivityFeed({ limit = 10 }: ActivityFeedProps) {
         )}
 
         {error && (
-          <div className="rounded-lg bg-red-50 p-4" role="alert">
-            <p className="text-sm text-red-800">
+          <div className="rounded-lg bg-destructive/10 p-4" role="alert">
+            <p className="text-sm text-destructive">
               Failed to load recent activity. Please try again later.
             </p>
           </div>
@@ -69,9 +73,9 @@ export function ActivityFeed({ limit = 10 }: ActivityFeedProps) {
 
         {!isLoading && !error && activities && activities.length === 0 && (
           <div className="text-center py-8">
-            <ActivityIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-sm text-gray-500">No recent activity yet</p>
-            <p className="text-xs text-gray-400 mt-1">
+            <ActivityIcon className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground">No recent activity yet</p>
+            <p className="text-xs text-muted-foreground/70 mt-1">
               Give feedback or request time off to see activity here
             </p>
           </div>

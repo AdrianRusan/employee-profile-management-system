@@ -21,12 +21,13 @@ import {
   CalendarDays,
   User,
   Clock,
-  Zap,
+  Sparkles,
 } from 'lucide-react';
 import { Permissions } from '@/lib/permissions';
 import type { AppRouter } from '@/server';
 import type { inferRouterOutputs } from '@trpc/server';
-import { Role } from '@prisma/client';
+import { cn } from '@/lib/utils';
+import type { Role } from '@/lib/types/user';
 
 type RouterOutputs = inferRouterOutputs<AppRouter>;
 
@@ -103,26 +104,38 @@ export function QuickActions({ user }: QuickActionsProps) {
   }, []);
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <Zap className="h-5 w-5 text-yellow-500" />
-          <CardTitle>Quick Actions</CardTitle>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+            <Sparkles className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <CardTitle className="text-lg">Quick Actions</CardTitle>
+            <CardDescription>Common tasks and shortcuts</CardDescription>
+          </div>
         </div>
-        <CardDescription>Common tasks and shortcuts</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Give Feedback */}
           <Button
             variant="outline"
-            className="justify-start h-auto py-3 transition-all duration-200 hover:shadow-md hover:border-primary/30"
+            className="group justify-between h-auto py-3 px-4 transition-all duration-200 hover:shadow-md hover:border-primary/30"
             onClick={handleGiveFeedback}
           >
-            <MessageSquare className="mr-2 h-4 w-4 transition-colors" />
-            <div className="text-left">
-              <div className="font-medium">Give Feedback</div>
-              <div className="text-xs text-muted-foreground">Share peer feedback</div>
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
+                <MessageSquare className="h-4 w-4 text-amber-500" />
+              </div>
+              <div className="text-left">
+                <div className="font-medium">Give Feedback</div>
+                <div className="text-xs text-muted-foreground">Share peer feedback</div>
+              </div>
+            </div>
+            <div className="hidden sm:flex items-center gap-0.5">
+              <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border bg-muted px-1 font-mono text-[10px] text-muted-foreground">N</kbd>
+              <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border bg-muted px-1 font-mono text-[10px] text-muted-foreground">F</kbd>
             </div>
           </Button>
 
@@ -135,20 +148,30 @@ export function QuickActions({ user }: QuickActionsProps) {
             <Button
               ref={absenceDialogTriggerRef}
               variant="outline"
-              className="justify-start h-auto py-3 w-full transition-all duration-200 hover:shadow-md hover:border-primary/30"
+              className="group justify-between h-auto py-3 px-4 w-full transition-all duration-200 hover:shadow-md hover:border-primary/30"
             >
-              <CalendarDays className="mr-2 h-4 w-4 transition-colors" />
-              <div className="text-left">
-                <div className="font-medium">Request Time Off</div>
-                <div className="text-xs text-muted-foreground">Submit absence request</div>
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
+                  <CalendarDays className="h-4 w-4 text-blue-500" />
+                </div>
+                <div className="text-left">
+                  <div className="font-medium">Request Time Off</div>
+                  <div className="text-xs text-muted-foreground">Submit absence request</div>
+                </div>
+              </div>
+              <div className="hidden sm:flex items-center gap-0.5">
+                <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border bg-muted px-1 font-mono text-[10px] text-muted-foreground">N</kbd>
+                <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border bg-muted px-1 font-mono text-[10px] text-muted-foreground">A</kbd>
               </div>
             </Button>
           </AbsenceRequestDialog>
 
           {/* View My Profile */}
-          <Button variant="outline" className="justify-start h-auto py-3" asChild>
+          <Button variant="outline" className="group justify-start h-auto py-3 px-4" asChild>
             <Link href={`/dashboard/profiles/${user.id}`}>
-              <User className="mr-2 h-4 w-4" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors mr-3">
+                <User className="h-4 w-4 text-emerald-500" />
+              </div>
               <div className="text-left">
                 <div className="font-medium">View My Profile</div>
                 <div className="text-xs text-muted-foreground">See your details</div>
@@ -157,31 +180,55 @@ export function QuickActions({ user }: QuickActionsProps) {
           </Button>
 
           {/* Browse All Profiles */}
-          <Button variant="outline" className="justify-start h-auto py-3" asChild>
+          <Button variant="outline" className="group justify-between h-auto py-3 px-4" asChild>
             <Link href="/dashboard/profiles">
-              <Users className="mr-2 h-4 w-4" />
-              <div className="text-left">
-                <div className="font-medium">Browse Profiles</div>
-                <div className="text-xs text-muted-foreground">View all employees</div>
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
+                  <Users className="h-4 w-4 text-purple-500" />
+                </div>
+                <div className="text-left">
+                  <div className="font-medium">Browse Profiles</div>
+                  <div className="text-xs text-muted-foreground">View all employees</div>
+                </div>
+              </div>
+              <div className="hidden sm:flex items-center gap-0.5">
+                <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border bg-muted px-1 font-mono text-[10px] text-muted-foreground">G</kbd>
+                <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border bg-muted px-1 font-mono text-[10px] text-muted-foreground">P</kbd>
               </div>
             </Link>
           </Button>
 
           {/* Manager: Pending Approvals */}
           {isManager && (
-            <Button variant="outline" className="justify-start h-auto py-3" asChild>
+            <Button variant="outline" className="group justify-between h-auto py-3 px-4 sm:col-span-2" asChild>
               <Link href="/dashboard/absences">
-                <Clock className="mr-2 h-4 w-4" />
-                <div className="text-left flex items-center gap-2">
-                  <div>
-                    <div className="font-medium">Pending Approvals</div>
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    'flex h-9 w-9 items-center justify-center rounded-lg transition-colors',
+                    pendingCount && pendingCount > 0
+                      ? 'bg-rose-500/10 group-hover:bg-rose-500/20'
+                      : 'bg-gray-500/10 group-hover:bg-gray-500/20'
+                  )}>
+                    <Clock className={cn(
+                      'h-4 w-4',
+                      pendingCount && pendingCount > 0 ? 'text-rose-500' : 'text-gray-500'
+                    )} />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-medium flex items-center gap-2">
+                      Pending Approvals
+                      {pendingCount !== undefined && pendingCount > 0 && (
+                        <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
+                          {pendingCount}
+                        </Badge>
+                      )}
+                    </div>
                     <div className="text-xs text-muted-foreground">Review time off requests</div>
                   </div>
-                  {pendingCount !== undefined && pendingCount > 0 && (
-                    <Badge variant="destructive" className="ml-auto">
-                      {pendingCount}
-                    </Badge>
-                  )}
+                </div>
+                <div className="hidden sm:flex items-center gap-0.5">
+                  <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border bg-muted px-1 font-mono text-[10px] text-muted-foreground">G</kbd>
+                  <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border bg-muted px-1 font-mono text-[10px] text-muted-foreground">A</kbd>
                 </div>
               </Link>
             </Button>

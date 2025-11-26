@@ -8,6 +8,7 @@ export enum AbsenceStatus {
 
 export interface AbsenceProps {
   id: string;
+  organizationId: string;
   userId: string;
   dateRange: DateRange;
   reason: string;
@@ -33,6 +34,7 @@ export class Absence {
    * Factory method to create a new Absence
    */
   static create(
+    organizationId: string,
     userId: string,
     dateRange: DateRange,
     reason: string,
@@ -40,6 +42,7 @@ export class Absence {
   ): Absence {
     return new Absence({
       id: id || crypto.randomUUID(),
+      organizationId,
       userId,
       dateRange,
       reason,
@@ -198,6 +201,10 @@ export class Absence {
    */
   get id(): string {
     return this.props.id;
+  }
+
+  get organizationId(): string {
+    return this.props.organizationId;
   }
 
   get userId(): string {

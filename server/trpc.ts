@@ -5,6 +5,8 @@ import { getCurrentUser, SessionData } from '@/lib/session';
 import { prisma } from './db';
 import { validateCsrfFromRequest } from '@/lib/csrf';
 import { createLogger, logger } from '@/lib/logger';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { tenantStorage, TenantContext } from '@/lib/tenant-context';
 import * as Sentry from '@sentry/nextjs';
 import { ZodError } from 'zod';
 import type { Logger } from 'pino';
@@ -16,6 +18,11 @@ export interface Context {
   req: Request;
   logger: Logger;
   requestId: string;
+}
+
+// Authenticated context with guaranteed non-null session
+export interface AuthenticatedContext extends Context {
+  session: SessionData;
 }
 
 // Create context for tRPC
@@ -102,14 +109,71 @@ const t = initTRPC.context<Context>().create({
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
-// Protected procedure middleware - requires authentication and CSRF validation
-export const protectedProcedure = t.procedure.use(async ({ ctx, next, type, path }) => {
+/**
+ * Get client IP address from request
+ */
+function getClientIp(req: Request): string {
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  const realIp = req.headers.get('x-real-ip');
+  return forwardedFor?.split(',')[0]?.trim() || realIp || 'unknown';
+}
+
+/**
+ * Rate limiting middleware
+ * Applies rate limiting based on client IP and optional user ID
+ */
+const rateLimitMiddleware = t.middleware(async ({ ctx, next, path }) => {
+  const clientIp = getClientIp(ctx.req);
+  const identifier = ctx.session?.userId
+    ? `user:${ctx.session.userId}`
+    : `ip:${clientIp}`;
+
+  const result = await checkRateLimit(identifier, 'api');
+
+  if (!result.success) {
+    ctx.logger.warn(
+      { identifier, path, remaining: result.remaining },
+      'Rate limit exceeded'
+    );
+
+    throw new TRPCError({
+      code: 'TOO_MANY_REQUESTS',
+      message: `Rate limit exceeded. Try again in ${Math.ceil((result.reset - Date.now()) / 1000)} seconds.`,
+    });
+  }
+
+  ctx.logger.debug(
+    { identifier, remaining: result.remaining },
+    'Rate limit check passed'
+  );
+
+  return next({ ctx });
+});
+
+// Protected procedure middleware - requires authentication, CSRF validation, and sets tenant context
+export const protectedProcedure = t.procedure.use(rateLimitMiddleware).use(async ({ ctx, next, type, path }) => {
   if (!ctx.session?.userId) {
     ctx.logger.warn({ path, type }, 'Unauthorized access attempt');
 
     throw new TRPCError({
       code: 'UNAUTHORIZED',
       message: 'You must be logged in to perform this action'
+    });
+  }
+
+  // Validate organization context exists in session
+  if (!ctx.session.organizationId || !ctx.session.organizationSlug) {
+    ctx.logger.warn({
+      path,
+      type,
+      userId: ctx.session.userId,
+      hasOrgId: !!ctx.session.organizationId,
+      hasOrgSlug: !!ctx.session.organizationSlug,
+    }, 'Missing organization context in session');
+
+    throw new TRPCError({
+      code: 'UNAUTHORIZED',
+      message: 'No organization context found. Please log in again.'
     });
   }
 
@@ -134,11 +198,25 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next, type, path
   // Log successful authentication
   ctx.logger.debug({ path, type }, 'Authenticated request');
 
-  return next({
-    ctx: {
-      ...ctx,
-      session: ctx.session,
-    },
+  // Set up tenant context for this request using AsyncLocalStorage
+  // This ensures all repository queries are automatically scoped to the organization
+  const tenantContext: TenantContext = {
+    organizationId: ctx.session.organizationId,
+    organizationSlug: ctx.session.organizationSlug,
+    organizationName: '', // Not required for queries, just the ID and slug
+  };
+
+  // Run the rest of the request within the tenant context
+  // Type assertion: at this point session is guaranteed to be non-null due to checks above
+  const session = ctx.session as SessionData;
+
+  return tenantStorage.run(tenantContext, () => {
+    return next({
+      ctx: {
+        ...ctx,
+        session, // Now TypeScript knows this is non-null
+      },
+    });
   });
 });
 

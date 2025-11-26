@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
+  // Enable standalone output for Docker deployment
+  // This creates a minimal production build with all dependencies
+  output: 'standalone',
+
   // Turbopack configuration (moved to top-level in Next.js 16)
   turbopack: {
     // Set workspace root to silence the multiple lockfiles warning

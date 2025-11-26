@@ -57,7 +57,10 @@ export function PermissionGate({
   fallback = null,
   check,
 }: PermissionGateProps) {
-  const { data: currentUser, isLoading } = trpc.auth.getCurrentUser.useQuery();
+  const { data: currentUser, isLoading } = trpc.auth.getCurrentUser.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000, // 5 minutes - user data rarely changes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+  });
 
   if (isLoading) {
     return <Skeleton className="h-8 w-full" />;

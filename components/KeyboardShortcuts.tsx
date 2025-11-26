@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 import {
   Keyboard,
   Navigation,
@@ -18,6 +17,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useKeyboardShortcutsContext } from './KeyboardShortcutsContext';
 
 interface Shortcut {
   keys: string[];
@@ -59,6 +59,8 @@ const shortcuts: Shortcut[] = [
   { keys: ['G', 'P'], description: 'Go to Profiles', category: 'navigation' },
   { keys: ['G', 'F'], description: 'Go to Feedback', category: 'navigation' },
   { keys: ['G', 'A'], description: 'Go to Absences', category: 'navigation' },
+  { keys: ['G', 'S'], description: 'Go to Settings', category: 'navigation' },
+  { keys: ['G', 'X'], description: 'Go to Security', category: 'navigation' },
 
   // Actions
   { keys: ['N', 'F'], description: 'New Feedback', category: 'actions' },
@@ -73,11 +75,12 @@ const shortcuts: Shortcut[] = [
 interface KeyboardShortcutsProps {
   onNavigate?: (path: string) => void;
   onAction?: (action: string) => void;
+  keySequence: string[];
+  setKeySequence: (seq: string[]) => void;
 }
 
-export function KeyboardShortcuts({ onNavigate, onAction }: KeyboardShortcutsProps) {
-  const [showDialog, setShowDialog] = useState(false);
-  const [keySequence, setKeySequence] = useState<string[]>([]);
+export function KeyboardShortcuts({ onNavigate, onAction, keySequence, setKeySequence }: KeyboardShortcutsProps) {
+  const { isDialogOpen, openDialog, closeDialog } = useKeyboardShortcutsContext();
 
   const handleShortcut = useCallback(
     (keys: string[]) => {
@@ -92,6 +95,10 @@ export function KeyboardShortcuts({ onNavigate, onAction }: KeyboardShortcutsPro
         onNavigate('/dashboard/feedback');
       } else if (keyString === 'GA' && onNavigate) {
         onNavigate('/dashboard/absences');
+      } else if (keyString === 'GS' && onNavigate) {
+        onNavigate('/dashboard/settings');
+      } else if (keyString === 'GX' && onNavigate) {
+        onNavigate('/dashboard/settings/security');
       }
       // Action shortcuts
       else if (keyString === 'NF' && onAction) {
@@ -116,16 +123,16 @@ export function KeyboardShortcuts({ onNavigate, onAction }: KeyboardShortcutsPro
         return;
       }
 
-      // Handle ? key to show shortcuts
-      if (e.key === '?' && !e.shiftKey) {
+      // Handle ? key to show shortcuts (requires Shift on most keyboards)
+      if (e.key === '?') {
         e.preventDefault();
-        setShowDialog(true);
+        openDialog();
         return;
       }
 
       // Handle Escape to close shortcuts dialog
-      if (e.key === 'Escape' && showDialog) {
-        setShowDialog(false);
+      if (e.key === 'Escape' && isDialogOpen) {
+        closeDialog();
         return;
       }
 
@@ -162,7 +169,7 @@ export function KeyboardShortcuts({ onNavigate, onAction }: KeyboardShortcutsPro
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [keySequence, showDialog, handleShortcut]);
+  }, [keySequence, setKeySequence, isDialogOpen, openDialog, closeDialog, handleShortcut]);
 
   // Group shortcuts by category
   const groupedShortcuts = shortcuts.reduce((acc, shortcut) => {
@@ -203,7 +210,7 @@ export function KeyboardShortcuts({ onNavigate, onAction }: KeyboardShortcutsPro
       )}
 
       {/* Keyboard Shortcuts Dialog */}
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+      <Dialog open={isDialogOpen} onOpenChange={(open) => open ? openDialog() : closeDialog()}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader className="space-y-3">
             <div className="flex items-center gap-3">

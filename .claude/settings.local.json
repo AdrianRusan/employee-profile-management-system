@@ -72,7 +72,10 @@
       "Skill(backend-development)",
       "Bash(tree:*)",
       "Bash(cd:*)",
-      "Skill(aesthetic)"
+      "Skill(aesthetic)",
+      "Bash(curl:*)",
+      "mcp__filesystem__list_directory_with_sizes",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

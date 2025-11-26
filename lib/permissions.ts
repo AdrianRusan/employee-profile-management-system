@@ -1,4 +1,25 @@
-import { User, Feedback, AbsenceRequest, Role } from '@prisma/client';
+/**
+ * Frontend-compatible Role type - decoupled from Prisma
+ * Must match Prisma enum: EMPLOYEE | MANAGER | COWORKER
+ */
+export type Role = 'EMPLOYEE' | 'MANAGER' | 'COWORKER';
+
+/**
+ * Minimal types for permission checks - decoupled from Prisma
+ */
+interface UserTarget {
+  id: string;
+}
+
+interface FeedbackTarget {
+  giverId: string;
+  receiverId?: string;
+}
+
+interface AbsenceTarget {
+  userId: string;
+  status?: string;
+}
 
 /**
  * Minimal user type for permission checks.
@@ -29,22 +50,29 @@ export const Permissions = {
     /**
      * Can view sensitive fields (salary, SSN, address, performanceRating)
      * Rules:
-     * - Managers can view all sensitive data
      * - Users can view their own sensitive data
-     * - Coworkers cannot view sensitive data (unless it's their own)
+     * - Manager viewing of others' sensitive data is validated server-side (department check)
+     *
+     * Note: Server validates manager department membership. Frontend only shows
+     * sensitive section for self to avoid showing empty sections.
      */
-    viewSensitive: (viewer: PermissionUser, target: Pick<User, 'id'>): boolean => {
-      return viewer.role === 'MANAGER' || viewer.id === target.id;
+    viewSensitive: (viewer: PermissionUser, target: UserTarget): boolean => {
+      // Only show sensitive section for self; server handles manager permissions
+      return viewer.id === target.id;
     },
 
     /**
      * Can edit user profile (basic fields like name, title, department)
      * Rules:
-     * - Managers can edit all profiles
      * - Users can edit their own profile
+     * - Manager editing of other profiles is validated server-side (department check)
+     *
+     * Note: For managers editing others, the server validates department membership.
+     * Frontend only shows edit for self to avoid showing buttons that may fail.
      */
-    edit: (viewer: PermissionUser, target: Pick<User, 'id'>): boolean => {
-      return viewer.role === 'MANAGER' || viewer.id === target.id;
+    edit: (viewer: PermissionUser, target: UserTarget): boolean => {
+      // Only allow self-edit in frontend; manager edit of others is server-validated
+      return viewer.id === target.id;
     },
 
     /**
@@ -53,7 +81,7 @@ export const Permissions = {
      * - Only managers can delete accounts
      * - Managers cannot delete themselves (safety check)
      */
-    delete: (viewer: PermissionUser, target: Pick<User, 'id'>): boolean => {
+    delete: (viewer: PermissionUser, target: UserTarget): boolean => {
       return viewer.role === 'MANAGER' && viewer.id !== target.id;
     },
 
@@ -63,7 +91,7 @@ export const Permissions = {
      * - All authenticated users can view profiles
      * - Sensitive fields are filtered separately via viewSensitive()
      */
-    view: (_viewer: PermissionUser, _target: Pick<User, 'id'>): boolean => {
+    view: (_viewer: PermissionUser, _target: UserTarget): boolean => {
       // Everyone can view profiles (sensitive fields filtered separately)
       return true;
     },
@@ -85,7 +113,7 @@ export const Permissions = {
      * - All authenticated users can give feedback
      * - Cannot give feedback to yourself
      */
-    give: (viewer: PermissionUser, receiver: Pick<User, 'id'>): boolean => {
+    give: (viewer: PermissionUser, receiver: UserTarget): boolean => {
       return viewer.id !== receiver.id;
     },
 
@@ -96,7 +124,7 @@ export const Permissions = {
      * - Feedback receivers can view feedback they received
      * - Feedback givers can view feedback they gave
      */
-    view: (viewer: PermissionUser, feedback: Pick<Feedback, 'giverId' | 'receiverId'>): boolean => {
+    view: (viewer: PermissionUser, feedback: FeedbackTarget): boolean => {
       return (
         viewer.id === feedback.giverId ||
         viewer.id === feedback.receiverId ||
@@ -121,14 +149,14 @@ export const Permissions = {
      * - Managers can edit/delete any feedback
      * - Feedback givers can edit/delete their own feedback
      */
-    edit: (viewer: PermissionUser, feedback: Pick<Feedback, 'giverId'>): boolean => {
+    edit: (viewer: PermissionUser, feedback: Pick<FeedbackTarget, 'giverId'>): boolean => {
       return viewer.id === feedback.giverId || viewer.role === 'MANAGER';
     },
 
     /**
      * Can delete feedback (alias for edit for clarity)
      */
-    delete: (viewer: PermissionUser, feedback: Pick<Feedback, 'giverId'>): boolean => {
+    delete: (viewer: PermissionUser, feedback: Pick<FeedbackTarget, 'giverId'>): boolean => {
       return viewer.id === feedback.giverId || viewer.role === 'MANAGER';
     },
   },
@@ -149,7 +177,7 @@ export const Permissions = {
      * - Managers can view all absence requests
      * - Users can view their own absence requests
      */
-    view: (viewer: PermissionUser, absence: Pick<AbsenceRequest, 'userId'>): boolean => {
+    view: (viewer: PermissionUser, absence: Pick<AbsenceTarget, 'userId'>): boolean => {
       return viewer.role === 'MANAGER' || viewer.id === absence.userId;
     },
 
@@ -187,7 +215,7 @@ export const Permissions = {
      * - Users can edit their own pending requests only
      * - Managers can edit any pending requests
      */
-    edit: (viewer: PermissionUser, absence: Pick<AbsenceRequest, 'userId' | 'status'>): boolean => {
+    edit: (viewer: PermissionUser, absence: AbsenceTarget): boolean => {
       if (viewer.role === 'MANAGER') {
         return absence.status === 'PENDING';
       }
@@ -200,7 +228,7 @@ export const Permissions = {
      * - Users can delete their own pending requests
      * - Managers can delete any pending requests
      */
-    delete: (viewer: PermissionUser, absence: Pick<AbsenceRequest, 'userId' | 'status'>): boolean => {
+    delete: (viewer: PermissionUser, absence: AbsenceTarget): boolean => {
       if (viewer.role === 'MANAGER') {
         return absence.status === 'PENDING';
       }

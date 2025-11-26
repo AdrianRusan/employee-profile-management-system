@@ -4,27 +4,16 @@ import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import Link from 'next/link';
 import { trpc } from '@/lib/trpc/Provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { isValidRole } from '@/lib/type-guards';
+import { TwoFactorVerify } from '@/components/auth/TwoFactorVerify';
+import { OAuthButtons } from '@/components/auth/OAuthButtons';
 
-const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  role: z.enum(['EMPLOYEE', 'MANAGER', 'COWORKER']).optional(),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
+import { loginSchema, type LoginInput } from '@/lib/validations/auth';
 
 function LoginForm() {
   const router = useRouter();
@@ -32,22 +21,35 @@ function LoginForm() {
   const from = searchParams.get('from') || '/dashboard';
   const utils = trpc.useUtils();
 
-  const [selectedRole, setSelectedRole] = useState<'EMPLOYEE' | 'MANAGER' | 'COWORKER' | undefined>();
+  const [showPassword, setShowPassword] = useState(false);
+
+  // 2FA state
+  const [requiresTwoFactor, setRequiresTwoFactor] = useState(false);
+  const [twoFactorEmail, setTwoFactorEmail] = useState('');
+  const [twoFactorError, setTwoFactorError] = useState('');
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     setError,
-  } = useForm<LoginFormData>({
+  } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
   });
 
-  const loginMutation = trpc.auth.login.useMutation({
-    onSuccess: async () => {
-      // Invalidate and refetch user data to update tRPC query cache
+  // Use password-based login for real authentication
+  const loginWithPasswordMutation = trpc.auth.loginWithPassword.useMutation({
+    onSuccess: async (data) => {
+      // Check if 2FA is required
+      if ('requiresTwoFactor' in data && data.requiresTwoFactor) {
+        setRequiresTwoFactor(true);
+        setTwoFactorEmail(data.email);
+        setTwoFactorError('');
+        return;
+      }
+
+      // No 2FA required, proceed to dashboard
       await utils.auth.getCurrentUser.invalidate();
-      // Wait for refetch to complete before navigation to ensure session is fully established
       await utils.auth.getCurrentUser.refetch();
       router.push(from);
     },
@@ -59,22 +61,65 @@ function LoginForm() {
     },
   });
 
-  const onSubmit = (data: LoginFormData) => {
-    loginMutation.mutate({
+  // Verify 2FA code
+  const verifyTwoFactorMutation = trpc.auth.verifyTwoFactor.useMutation({
+    onSuccess: async () => {
+      await utils.auth.getCurrentUser.invalidate();
+      await utils.auth.getCurrentUser.refetch();
+      router.push(from);
+    },
+    onError: (error) => {
+      setTwoFactorError(error.message);
+    },
+  });
+
+  const onSubmit = (data: LoginInput) => {
+    loginWithPasswordMutation.mutate({
       email: data.email,
-      role: selectedRole,
+      password: data.password,
     });
   };
 
+  const handleTwoFactorVerify = (code: string, isBackupCode: boolean, trustDevice: boolean) => {
+    setTwoFactorError('');
+    verifyTwoFactorMutation.mutate({
+      email: twoFactorEmail,
+      code,
+      isBackupCode,
+      trustDevice,
+    });
+  };
+
+  const handleTwoFactorCancel = () => {
+    setRequiresTwoFactor(false);
+    setTwoFactorEmail('');
+    setTwoFactorError('');
+  };
+
+  // For loading states
+  const isLoading = loginWithPasswordMutation.isPending;
+
+  // If 2FA is required, show the 2FA verification component
+  if (requiresTwoFactor) {
+    return (
+      <TwoFactorVerify
+        email={twoFactorEmail}
+        onVerify={handleTwoFactorVerify}
+        onCancel={handleTwoFactorCancel}
+        isLoading={verifyTwoFactorMutation.isPending}
+        error={twoFactorError}
+      />
+    );
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/50 px-4 py-12">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl">Employee Profile System</CardTitle>
-          <CardDescription>
-            Sign in to access your profile and manage employee data
-          </CardDescription>
-        </CardHeader>
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle className="text-2xl">Welcome back</CardTitle>
+        <CardDescription>
+          Sign in to access your profile and manage employee data
+        </CardDescription>
+      </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
@@ -92,60 +137,63 @@ function LoginForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="role">Role (Demo Feature)</Label>
-              <Select
-                value={selectedRole}
-                onValueChange={(value) => {
-                  if (isValidRole(value)) {
-                    setSelectedRole(value);
-                  }
-                }}
-              >
-                <SelectTrigger id="role">
-                  <SelectValue placeholder="Use profile default role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="MANAGER">Manager</SelectItem>
-                  <SelectItem value="EMPLOYEE">Employee</SelectItem>
-                  <SelectItem value="COWORKER">Coworker</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Optional: Override your default role for demo purposes
-              </p>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <Link href="/forgot-password" className="text-xs text-primary hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••••••"
+                  {...register('password')}
+                  aria-invalid={errors.password ? 'true' : 'false'}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-sm text-destructive">{errors.password.message}</p>
+              )}
             </div>
 
             <Button
               type="submit"
               className="w-full"
-              disabled={loginMutation.isPending}
+              disabled={isLoading}
             >
-              {loginMutation.isPending ? 'Signing in...' : 'Sign In'}
+              {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
 
-          <div className="mt-6 space-y-2 border-t pt-6">
-            <p className="text-sm font-medium text-foreground">Demo Accounts:</p>
-            <div className="space-y-1 text-xs text-muted-foreground">
-              <p>Manager: emily@example.com</p>
-              <p>Employee: david@example.com</p>
-              <p>Coworker: sarah@example.com</p>
-            </div>
+          <OAuthButtons />
+
+          <div className="mt-6 text-center text-sm">
+            <p className="text-muted-foreground">
+              Don't have an account?{' '}
+              <Link href="/register" className="font-medium text-primary hover:underline">
+                Create an account
+              </Link>
+            </p>
           </div>
         </CardContent>
       </Card>
-    </div>
   );
 }
 
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-muted/50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-sm text-muted-foreground">Loading...</p>
-        </div>
+      <div className="flex flex-col items-center gap-3">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <p className="text-sm text-muted-foreground">Loading...</p>
       </div>
     }>
       <LoginForm />

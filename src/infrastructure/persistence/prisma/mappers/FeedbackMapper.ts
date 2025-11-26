@@ -12,6 +12,7 @@ export class FeedbackMapper {
   static toDomain(prismaFeedback: PrismaFeedback): Feedback {
     return Feedback.reconstitute({
       id: prismaFeedback.id,
+      organizationId: prismaFeedback.organizationId,
       giverId: prismaFeedback.giverId,
       receiverId: prismaFeedback.receiverId,
       content: prismaFeedback.content,
@@ -29,6 +30,7 @@ export class FeedbackMapper {
   static toPrisma(feedback: Feedback): Omit<PrismaFeedback, 'createdAt' | 'updatedAt'> {
     return {
       id: feedback.id,
+      organizationId: feedback.organizationId,
       giverId: feedback.giverId,
       receiverId: feedback.receiverId,
       content: feedback.content,

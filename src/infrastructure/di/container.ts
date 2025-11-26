@@ -5,11 +5,15 @@ import { prisma } from '../../../server/db';
 import { IUserRepository } from '../../domain/repositories/IUserRepository';
 import { IAbsenceRepository } from '../../domain/repositories/IAbsenceRepository';
 import { IFeedbackRepository } from '../../domain/repositories/IFeedbackRepository';
+import { INotificationRepository } from '../../domain/repositories/INotificationRepository';
+import { IOrganizationRepository } from '../../domain/repositories/IOrganizationRepository';
 
 // Infrastructure Repository Implementations
 import { PrismaUserRepository } from '../persistence/prisma/repositories/PrismaUserRepository';
 import { PrismaAbsenceRepository } from '../persistence/prisma/repositories/PrismaAbsenceRepository';
 import { PrismaFeedbackRepository } from '../persistence/prisma/repositories/PrismaFeedbackRepository';
+import { PrismaNotificationRepository } from '../persistence/prisma/repositories/PrismaNotificationRepository';
+import { PrismaOrganizationRepository } from '../persistence/prisma/repositories/PrismaOrganizationRepository';
 
 // Application Ports
 import { ILogger } from '../../application/ports/ILogger';
@@ -45,6 +49,18 @@ import { DeleteFeedbackUseCase } from '../../application/use-cases/feedback/Dele
 
 // Use Cases - Dashboard
 import { GetDashboardMetricsUseCase } from '../../application/use-cases/dashboard/GetDashboardMetricsUseCase';
+
+// Use Cases - Notification
+import { CreateNotificationUseCase } from '../../application/use-cases/notification/CreateNotificationUseCase';
+import { GetNotificationsUseCase } from '../../application/use-cases/notification/GetNotificationsUseCase';
+import { MarkNotificationReadUseCase } from '../../application/use-cases/notification/MarkNotificationReadUseCase';
+import { MarkAllNotificationsReadUseCase } from '../../application/use-cases/notification/MarkAllNotificationsReadUseCase';
+
+// Use Cases - Organization
+import { GetOrganizationUseCase } from '../../application/use-cases/organization/GetOrganizationUseCase';
+import { GetOrganizationSettingsUseCase } from '../../application/use-cases/organization/GetOrganizationSettingsUseCase';
+import { UpdateOrganizationSettingsUseCase } from '../../application/use-cases/organization/UpdateOrganizationSettingsUseCase';
+import { CompleteOnboardingUseCase } from '../../application/use-cases/organization/CompleteOnboardingUseCase';
 
 /**
  * Dependency Injection Container
@@ -86,6 +102,8 @@ export class Container {
   private _userRepository: IUserRepository;
   private _absenceRepository: IAbsenceRepository;
   private _feedbackRepository: IFeedbackRepository;
+  private _notificationRepository: INotificationRepository;
+  private _organizationRepository: IOrganizationRepository;
 
   // Use Cases - Absence
   private _createAbsenceUseCase: CreateAbsenceUseCase;
@@ -112,6 +130,18 @@ export class Container {
   // Use Cases - Dashboard
   private _getDashboardMetricsUseCase: GetDashboardMetricsUseCase;
 
+  // Use Cases - Notification
+  private _createNotificationUseCase: CreateNotificationUseCase;
+  private _getNotificationsUseCase: GetNotificationsUseCase;
+  private _markNotificationReadUseCase: MarkNotificationReadUseCase;
+  private _markAllNotificationsReadUseCase: MarkAllNotificationsReadUseCase;
+
+  // Use Cases - Organization
+  private _getOrganizationUseCase: GetOrganizationUseCase;
+  private _getOrganizationSettingsUseCase: GetOrganizationSettingsUseCase;
+  private _updateOrganizationSettingsUseCase: UpdateOrganizationSettingsUseCase;
+  private _completeOnboardingUseCase: CompleteOnboardingUseCase;
+
   private constructor() {
     // Initialize infrastructure dependencies
     this._prisma = prisma;
@@ -123,6 +153,8 @@ export class Container {
     this._userRepository = new PrismaUserRepository(this._prisma, this._encryption);
     this._absenceRepository = new PrismaAbsenceRepository(this._prisma);
     this._feedbackRepository = new PrismaFeedbackRepository(this._prisma);
+    this._notificationRepository = new PrismaNotificationRepository(this._prisma);
+    this._organizationRepository = new PrismaOrganizationRepository(this._prisma);
 
     // Initialize use cases with their dependencies
 
@@ -214,6 +246,38 @@ export class Container {
       this._userRepository,
       this._logger
     );
+
+    // Notification Use Cases
+    this._createNotificationUseCase = new CreateNotificationUseCase(
+      this._notificationRepository,
+      this._logger
+    );
+    this._getNotificationsUseCase = new GetNotificationsUseCase(
+      this._notificationRepository,
+      this._logger
+    );
+    this._markNotificationReadUseCase = new MarkNotificationReadUseCase(
+      this._notificationRepository,
+      this._logger
+    );
+    this._markAllNotificationsReadUseCase = new MarkAllNotificationsReadUseCase(
+      this._notificationRepository,
+      this._logger
+    );
+
+    // Organization Use Cases
+    this._getOrganizationUseCase = new GetOrganizationUseCase(
+      this._organizationRepository
+    );
+    this._getOrganizationSettingsUseCase = new GetOrganizationSettingsUseCase(
+      this._organizationRepository
+    );
+    this._updateOrganizationSettingsUseCase = new UpdateOrganizationSettingsUseCase(
+      this._organizationRepository
+    );
+    this._completeOnboardingUseCase = new CompleteOnboardingUseCase(
+      this._organizationRepository
+    );
   }
 
   /**
@@ -295,6 +359,14 @@ export class Container {
     return this._feedbackRepository;
   }
 
+  /**
+   * Get the Notification repository
+   * Useful for direct repository access in complex scenarios
+   */
+  get notificationRepository(): INotificationRepository {
+    return this._notificationRepository;
+  }
+
   // ==================== Use Case Getters - Absence ====================
 
   get createAbsenceUseCase(): CreateAbsenceUseCase {
@@ -371,6 +443,52 @@ export class Container {
 
   get restoreUserUseCase(): RestoreUserUseCase {
     return this._restoreUserUseCase;
+  }
+
+  // ==================== Use Case Getters - Notification ====================
+
+  get createNotificationUseCase(): CreateNotificationUseCase {
+    return this._createNotificationUseCase;
+  }
+
+  get getNotificationsUseCase(): GetNotificationsUseCase {
+    return this._getNotificationsUseCase;
+  }
+
+  get markNotificationReadUseCase(): MarkNotificationReadUseCase {
+    return this._markNotificationReadUseCase;
+  }
+
+  get markAllNotificationsReadUseCase(): MarkAllNotificationsReadUseCase {
+    return this._markAllNotificationsReadUseCase;
+  }
+
+  // ==================== Repository Getter - Organization ====================
+
+  /**
+   * Get the Organization repository
+   * Useful for direct repository access in complex scenarios
+   */
+  get organizationRepository(): IOrganizationRepository {
+    return this._organizationRepository;
+  }
+
+  // ==================== Use Case Getters - Organization ====================
+
+  get getOrganizationUseCase(): GetOrganizationUseCase {
+    return this._getOrganizationUseCase;
+  }
+
+  get getOrganizationSettingsUseCase(): GetOrganizationSettingsUseCase {
+    return this._getOrganizationSettingsUseCase;
+  }
+
+  get updateOrganizationSettingsUseCase(): UpdateOrganizationSettingsUseCase {
+    return this._updateOrganizationSettingsUseCase;
+  }
+
+  get completeOnboardingUseCase(): CompleteOnboardingUseCase {
+    return this._completeOnboardingUseCase;
   }
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, lazy, useState } from 'react';
+import { Suspense, lazy } from 'react';
 import { trpc } from '@/lib/trpc/Provider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -8,6 +8,7 @@ import { FadeIn } from '@/components/FadeIn';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { MetricsCard } from '@/components/dashboard/MetricsCard';
 import { DashboardCustomization, useDashboardPreferences } from '@/components/dashboard/DashboardCustomization';
+import { User } from 'lucide-react';
 
 // Lazy load heavy components for better initial page load
 const ActivityFeed = lazy(() => import('@/components/dashboard/ActivityFeed').then(mod => ({ default: mod.ActivityFeed })));
@@ -16,7 +17,10 @@ const AbsenceChart = lazy(() => import('@/components/dashboard/AbsenceChart').th
 const UpcomingAbsences = lazy(() => import('@/components/dashboard/UpcomingAbsences').then(mod => ({ default: mod.UpcomingAbsences })));
 
 export default function DashboardPage() {
-  const { data: currentUser, isLoading, isError, error } = trpc.auth.getCurrentUser.useQuery();
+  const { data: currentUser, isLoading, isError, error } = trpc.auth.getCurrentUser.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000, // 5 minutes - user data rarely changes within a session
+    gcTime: 30 * 60 * 1000, // 30 minutes - keep in cache for navigation
+  });
   const preferences = useDashboardPreferences();
 
   return (
@@ -36,10 +40,17 @@ export default function DashboardPage() {
       {/* Top Section: Profile Info and Quick Actions */}
       <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
         <FadeIn delay={0.1} direction="up">
-          <Card>
+          <Card className="overflow-hidden">
             <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-              <CardDescription>View and manage your profile</CardDescription>
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10">
+                  <User className="h-5 w-5 text-blue-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Profile Information</CardTitle>
+                  <CardDescription>View and manage your profile</CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -53,10 +64,19 @@ export default function DashboardPage() {
                   Failed to load profile{error?.message ? `: ${error.message}` : ''}
                 </p>
               ) : (
-                <div className="space-y-2 text-sm">
-                  <p><span className="font-medium">Email:</span> {currentUser?.email}</p>
-                  <p><span className="font-medium">Department:</span> {currentUser?.department || 'N/A'}</p>
-                  <p><span className="font-medium">Title:</span> {currentUser?.title || 'N/A'}</p>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50">
+                    <span className="text-sm text-muted-foreground">Email</span>
+                    <span className="text-sm font-medium">{currentUser?.email}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50">
+                    <span className="text-sm text-muted-foreground">Department</span>
+                    <span className="text-sm font-medium">{currentUser?.department || 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50">
+                    <span className="text-sm text-muted-foreground">Title</span>
+                    <span className="text-sm font-medium">{currentUser?.title || 'N/A'}</span>
+                  </div>
                 </div>
               )}
             </CardContent>

@@ -1,8 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { CommandPalette } from './CommandPalette';
+import { CommandPaletteProvider } from './CommandPaletteContext';
+import { KeyboardShortcutsContextProvider } from './KeyboardShortcutsContext';
 
 interface KeyboardShortcutsProviderProps {
   children: React.ReactNode;
@@ -11,12 +14,13 @@ interface KeyboardShortcutsProviderProps {
 
 export function KeyboardShortcutsProvider({ children, onAction }: KeyboardShortcutsProviderProps) {
   const router = useRouter();
+  const [keySequence, setKeySequence] = useState<string[]>([]);
 
   const handleNavigate = (path: string) => {
     router.push(path);
   };
 
-  const handleAction = (action: string, data?: any) => {
+  const handleAction = (action: string, data?: unknown) => {
     if (onAction) {
       onAction(action);
     } else {
@@ -30,10 +34,17 @@ export function KeyboardShortcutsProvider({ children, onAction }: KeyboardShortc
   };
 
   return (
-    <>
-      {children}
-      <KeyboardShortcuts onNavigate={handleNavigate} onAction={handleAction} />
-      <CommandPalette onAction={handleAction} />
-    </>
+    <CommandPaletteProvider>
+      <KeyboardShortcutsContextProvider>
+        {children}
+        <KeyboardShortcuts
+          onNavigate={handleNavigate}
+          onAction={handleAction}
+          keySequence={keySequence}
+          setKeySequence={setKeySequence}
+        />
+        <CommandPalette onAction={handleAction} />
+      </KeyboardShortcutsContextProvider>
+    </CommandPaletteProvider>
   );
 }

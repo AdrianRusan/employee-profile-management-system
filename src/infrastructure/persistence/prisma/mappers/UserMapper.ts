@@ -14,6 +14,7 @@ export class UserMapper {
   static toDomain(prismaUser: PrismaUser): User {
     return User.reconstitute({
       id: prismaUser.id,
+      organizationId: prismaUser.organizationId,
       email: Email.create(prismaUser.email),
       name: prismaUser.name,
       role: this.mapRole(prismaUser.role),
@@ -47,9 +48,18 @@ export class UserMapper {
   static toPrisma(user: User): Omit<PrismaUser, 'createdAt' | 'updatedAt'> {
     return {
       id: user.id,
+      organizationId: user.organizationId,
       email: user.email.value,
       name: user.name,
       role: this.mapToPrismaRole(user.role),
+      status: 'ACTIVE', // Default to ACTIVE status
+      passwordHash: null, // Password hash managed separately by auth system
+      emailVerified: false, // Default to false, updated by auth system
+      emailVerifiedAt: null, // Updated by auth system
+      twoFactorEnabled: false, // Default to false
+      twoFactorSecret: null, // Updated when 2FA is enabled
+      backupCodes: [], // Empty array by default
+      lastLoginAt: null, // Updated by auth system on login
       department: user.department ?? null,
       position: user.position ?? null,
       title: user.title ?? null,

@@ -7,6 +7,7 @@ import {
   getFeedbackForUserSchema,
 } from '@/lib/validations/feedback';
 import { container } from '@/src/infrastructure/di/container';
+import { sendFeedbackReceivedEmail } from '@/lib/email/send-emails';
 
 /**
  * Feedback router for peer feedback management
@@ -27,13 +28,45 @@ export const feedbackRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      return container.createFeedbackUseCase.execute({
+      const feedback = await container.createFeedbackUseCase.execute({
         giverId: ctx.session.userId,
         receiverId: input.receiverId,
         content: input.content,
         polishedContent: input.polishedContent,
         isPolished: input.isPolished,
       });
+
+      // Create notification for the receiver
+      const giver = await container.userRepository.findById(ctx.session.userId);
+      const receiver = await container.userRepository.findById(input.receiverId);
+
+      if (giver) {
+        await container.createNotificationUseCase.execute({
+          userId: input.receiverId,
+          type: 'FEEDBACK_RECEIVED',
+          title: 'New Feedback',
+          message: `${giver.name} has given you feedback`,
+          data: { feedbackId: feedback.id, giverId: ctx.session.userId },
+        });
+
+        // Send email notification to receiver
+        if (receiver) {
+          const emailResult = await sendFeedbackReceivedEmail(
+            receiver.email.value,
+            receiver.name,
+            giver.name,
+            input.content
+          );
+          if (!emailResult.success) {
+            ctx.logger.warn(
+              { receiverId: input.receiverId, error: emailResult.error },
+              'Failed to send feedback notification email'
+            );
+          }
+        }
+      }
+
+      return feedback;
     }),
 
   /**

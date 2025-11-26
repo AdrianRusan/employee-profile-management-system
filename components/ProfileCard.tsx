@@ -24,7 +24,10 @@ export function ProfileCard({ user, currentUserId, currentUserRole, onEdit }: Pr
   const [showSSN, setShowSSN] = useState(false);
   const viewer: PermissionUser = { id: currentUserId, role: currentUserRole, email: '' };
   const canEdit = Permissions.user.edit(viewer, { id: user.id });
-  const canSeeSensitive = Permissions.user.viewSensitive(viewer, { id: user.id });
+
+  // Check if there's actually any sensitive data to show
+  // Server filters sensitive data based on permissions, so we just check if data exists
+  const hasSensitiveData = !!(user.salary || user.performanceRating || user.address || user.ssn);
 
   // Mask SSN (show only last 4 digits)
   const maskSSN = (ssn: string): string => {
@@ -114,8 +117,8 @@ export function ProfileCard({ user, currentUserId, currentUserRole, onEdit }: Pr
             </div>
           )}
 
-          {/* Sensitive fields - only visible to managers and self */}
-          {canSeeSensitive && (
+          {/* Sensitive fields - only shown if data exists (server filters based on permissions) */}
+          {hasSensitiveData && (
             <>
               <div className="border-t pt-4 mt-2">
                 <div className="flex items-center gap-2 mb-3">

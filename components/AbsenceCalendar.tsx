@@ -21,9 +21,16 @@ interface AbsenceCalendarProps {
  */
 export function AbsenceCalendar({ userId, showLegend = true }: AbsenceCalendarProps) {
   // Fetch absence data based on whether userId is provided
+  // Short staleTime for responsive updates when absences change
   const { data: absences, isLoading } = userId
-    ? trpc.absence.getForUser.useQuery({ userId })
-    : trpc.absence.getMy.useQuery();
+    ? trpc.absence.getForUser.useQuery(
+        { userId },
+        { staleTime: 30 * 1000, gcTime: 5 * 60 * 1000 } // 30 seconds stale, 5 min cache
+      )
+    : trpc.absence.getMy.useQuery(
+        undefined,
+        { staleTime: 30 * 1000, gcTime: 5 * 60 * 1000 } // 30 seconds stale, 5 min cache
+      );
 
   // Process absences into date ranges by status
   const absencesByStatus = useMemo(() => {

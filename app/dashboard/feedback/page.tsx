@@ -17,16 +17,34 @@ import {
 } from '@/components/ui/select';
 import { Sparkles, ChevronDown, ChevronUp, MessageSquare, Send } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { Feedback, User } from '@prisma/client';
 
-type FeedbackWithUser = Omit<Feedback, 'createdAt' | 'updatedAt' | 'deletedAt' | 'polishedContent'> & {
-  giver?: Partial<User> | null;
-  receiver?: Partial<User> | null;
+/**
+ * Frontend-only type definitions for feedback data
+ * These decouple the UI from Prisma schema and represent the data as returned by tRPC
+ */
+interface FeedbackUser {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string | null;
+  department?: string | null;
+  title?: string | null;
+}
+
+interface FeedbackWithUser {
+  id: string;
+  content: string;
+  giverId: string;
+  receiverId: string;
   createdAt: string | Date;
   updatedAt: string | Date;
-  deletedAt?: string;
-  polishedContent?: string;
-};
+  deletedAt?: string | null;
+  isPolished?: boolean;
+  polishedContent?: string | null;
+  organizationId?: string;
+  giver?: FeedbackUser | null;
+  receiver?: FeedbackUser | null;
+}
 
 /**
  * Dedicated Feedback Page
@@ -34,7 +52,10 @@ type FeedbackWithUser = Omit<Feedback, 'createdAt' | 'updatedAt' | 'deletedAt' |
  * Features filtering, sorting, and detailed feedback view
  */
 export default function FeedbackPage() {
-  const { data: currentUser } = trpc.auth.getCurrentUser.useQuery();
+  const { data: currentUser } = trpc.auth.getCurrentUser.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000, // 5 minutes - user data rarely changes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+  });
   const [expandedFeedback, setExpandedFeedback] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'recent' | 'oldest'>('recent');
 
@@ -53,6 +74,10 @@ export default function FeedbackPage() {
 
   const { data: stats } = trpc.feedback.getStats.useQuery({
     userId: currentUser?.id || '',
+  }, {
+    staleTime: 5 * 60 * 1000, // 5 minutes - stats don't change frequently
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    enabled: !!currentUser?.id,
   });
 
   const toggleExpand = (feedbackId: string) => {
@@ -83,10 +108,10 @@ export default function FeedbackPage() {
     isExpanded: boolean
   ) => {
     const displayPerson = type === 'received' ? item.giver : item.receiver;
-    const displayContent =
-      isExpanded && item.isPolished && item.polishedContent
-        ? item.polishedContent
-        : item.content;
+    // Show polished content by default if available, otherwise original
+    const displayContent = item.isPolished && item.polishedContent
+      ? item.polishedContent
+      : item.content;
 
     if (!displayPerson) {
       return null;
@@ -135,24 +160,34 @@ export default function FeedbackPage() {
                 {isExpanded ? (
                   <>
                     <ChevronUp className="mr-2 h-4 w-4" />
-                    Show Original
+                    Hide Comparison
                   </>
                 ) : (
                   <>
                     <ChevronDown className="mr-2 h-4 w-4" />
-                    Show Polished Version
+                    Compare Versions
                   </>
                 )}
               </Button>
 
               {isExpanded && (
-                <div className="mt-3 p-3 bg-muted rounded-md space-y-2">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">
-                    Original Version
-                  </p>
-                  <p className="text-sm whitespace-pre-wrap">
-                    {item.content}
-                  </p>
+                <div className="mt-3 p-3 bg-muted rounded-md space-y-3">
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-primary uppercase">
+                      AI Polished Version
+                    </p>
+                    <p className="text-sm whitespace-pre-wrap">
+                      {item.polishedContent}
+                    </p>
+                  </div>
+                  <div className="border-t pt-3 space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase">
+                      Original Version
+                    </p>
+                    <p className="text-sm whitespace-pre-wrap text-muted-foreground">
+                      {item.content}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
