@@ -153,7 +153,7 @@ export default function AllUsersPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(data.users as UserWithOrganization[]).map((user) => (
+                    {(data.users as unknown as UserWithOrganization[]).map((user) => (
                       <TableRow
                         key={user.id}
                         className="hover:bg-secondary/50 border-border"
