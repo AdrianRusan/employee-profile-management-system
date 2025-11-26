@@ -1,7 +1,17 @@
 import { Resend } from 'resend';
 
-// Initialize Resend client
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy-initialized Resend client (avoids build-time errors when API key is not set)
+let resendClient: Resend | null = null;
+
+function getResendClient(): Resend | null {
+  if (!process.env.RESEND_API_KEY) {
+    return null;
+  }
+  if (!resendClient) {
+    resendClient = new Resend(process.env.RESEND_API_KEY);
+  }
+  return resendClient;
+}
 
 // Default sender - uses verified Resend domain
 const DEFAULT_FROM = process.env.EMAIL_FROM || 'Employee Hub <noreply@resend.adrian-rusan.com>';
@@ -45,8 +55,9 @@ export interface SendEmailResult {
  */
 export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
   try {
-    // Validate API key
-    if (!process.env.RESEND_API_KEY) {
+    // Get Resend client (lazy initialization)
+    const resend = getResendClient();
+    if (!resend) {
       console.error('RESEND_API_KEY is not configured');
       return {
         success: false,
