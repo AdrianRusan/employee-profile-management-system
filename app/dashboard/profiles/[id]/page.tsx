@@ -34,7 +34,14 @@ function ProfilePageContent({ id }: { id: string }) {
 
   if (error) {
     if (error.data?.code === 'NOT_FOUND') {
-      notFound();
+      return (
+        <div className="rounded-lg border border-border bg-muted/10 p-6 text-center">
+          <p className="font-medium">Profile not found</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            The requested profile does not exist or you don't have permission to view it.
+          </p>
+        </div>
+      );
     }
     return (
       <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-6 text-red-400">

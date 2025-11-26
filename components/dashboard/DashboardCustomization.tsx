@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
++import { useState, useEffect, useCallback, type ElementType } from 'react';
 import {
   Settings,
   LayoutDashboard,
@@ -47,7 +47,7 @@ interface WidgetConfig {
   key: keyof DashboardPreferences;
   label: string;
   description: string;
-  icon: React.ElementType;
+  icon: ElementType;
   color: string;
 }
 
