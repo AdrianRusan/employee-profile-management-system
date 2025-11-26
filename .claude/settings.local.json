@@ -76,7 +76,8 @@
       "Bash(curl:*)",
       "mcp__filesystem__list_directory_with_sizes",
       "Bash(ls:*)",
-      "Bash(git -C \"C:\\Users\\Adrian Rusan\\Work_Windows\\Personal\\Myself\\employee-profile-management-system\" log --oneline -20)"
+      "Bash(git -C \"C:\\Users\\Adrian Rusan\\Work_Windows\\Personal\\Myself\\employee-profile-management-system\" log --oneline -20)",
+      "Bash(npm run test:*)"
     ],
     "deny": [],
     "ask": []
