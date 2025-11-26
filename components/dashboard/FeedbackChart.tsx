@@ -56,13 +56,17 @@ export function FeedbackChart() {
 
   if (!stats || stats.total === 0) {
     return (
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <CardTitle>Feedback Breakdown</CardTitle>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+              <Sparkles className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">Feedback Breakdown</CardTitle>
+              <CardDescription>Polished vs unpolished feedback</CardDescription>
+            </div>
           </div>
-          <CardDescription>Polished vs unpolished feedback</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-64 flex flex-col items-center justify-center text-center">
@@ -91,15 +95,19 @@ export function FeedbackChart() {
   ].filter((item) => item.value > 0); // Only show non-zero values
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          <CardTitle>Feedback Breakdown</CardTitle>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+            <Sparkles className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <CardTitle className="text-lg">Feedback Breakdown</CardTitle>
+            <CardDescription>
+              Polished vs unpolished feedback ({stats.total} total)
+            </CardDescription>
+          </div>
         </div>
-        <CardDescription>
-          Polished vs unpolished feedback ({stats.total} total)
-        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="h-64">
@@ -163,15 +171,21 @@ export function FeedbackChart() {
         </div>
 
         {/* Summary stats */}
-        <div className="mt-4 pt-4 border-t border-border">
-          <div className="grid grid-cols-2 gap-4 text-center">
-            <div>
-              <p className="text-2xl font-bold text-primary">{stats.polished}</p>
-              <p className="text-xs text-muted-foreground mt-1">AI Polished</p>
+        <div className="mt-4 pt-4 border-t">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-500/5">
+              <div className="h-3 w-3 rounded-full bg-blue-500" />
+              <div>
+                <p className="text-lg font-bold text-foreground">{stats.polished}</p>
+                <p className="text-xs text-muted-foreground">AI Polished</p>
+              </div>
             </div>
-            <div>
-              <p className="text-2xl font-bold text-muted-foreground">{stats.unpolished}</p>
-              <p className="text-xs text-muted-foreground mt-1">Original</p>
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+              <div className="h-3 w-3 rounded-full bg-slate-400" />
+              <div>
+                <p className="text-lg font-bold text-foreground">{stats.unpolished}</p>
+                <p className="text-xs text-muted-foreground">Original</p>
+              </div>
             </div>
           </div>
         </div>

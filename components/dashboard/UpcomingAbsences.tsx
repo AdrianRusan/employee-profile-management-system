@@ -45,13 +45,21 @@ export function UpcomingAbsences() {
 
   if (error) {
     return (
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
-          <CardTitle>Upcoming Time Off</CardTitle>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10">
+              <CalendarCheck className="h-5 w-5 text-emerald-500" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">Upcoming Time Off</CardTitle>
+              <CardDescription>Your approved absences in the next 60 days</CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-lg bg-red-50 p-4">
-            <p className="text-sm text-red-800">
+          <div className="rounded-lg bg-destructive/10 p-4">
+            <p className="text-sm text-destructive">
               Failed to load upcoming absences. Please try again later.
             </p>
           </div>
@@ -62,19 +70,23 @@ export function UpcomingAbsences() {
 
   if (!absences || absences.length === 0) {
     return (
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <CalendarCheck className="h-5 w-5 text-green-500" />
-            <CardTitle>Upcoming Time Off</CardTitle>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10">
+              <CalendarCheck className="h-5 w-5 text-emerald-500" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">Upcoming Time Off</CardTitle>
+              <CardDescription>Your approved absences in the next 60 days</CardDescription>
+            </div>
           </div>
-          <CardDescription>Your approved absences in the next 60 days</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="py-8 flex flex-col items-center justify-center text-center">
-            <CalendarCheck className="h-12 w-12 text-gray-300 mb-3" />
-            <p className="text-sm text-gray-500">No upcoming time off</p>
-            <p className="text-xs text-gray-400 mt-1">
+            <CalendarCheck className="h-12 w-12 text-muted-foreground/30 mb-3" />
+            <p className="text-sm text-muted-foreground">No upcoming time off</p>
+            <p className="text-xs text-muted-foreground/70 mt-1">
               Approved absences will appear here
             </p>
           </div>
@@ -93,15 +105,19 @@ export function UpcomingAbsences() {
   };
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <CalendarCheck className="h-5 w-5 text-green-500" />
-          <CardTitle>Upcoming Time Off</CardTitle>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10">
+            <CalendarCheck className="h-5 w-5 text-emerald-500" />
+          </div>
+          <div>
+            <CardTitle className="text-lg">Upcoming Time Off</CardTitle>
+            <CardDescription>
+              Your approved absences in the next 60 days ({absences.length})
+            </CardDescription>
+          </div>
         </div>
-        <CardDescription>
-          Your approved absences in the next 60 days ({absences.length})
-        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
@@ -114,30 +130,30 @@ export function UpcomingAbsences() {
             return (
               <div
                 key={absence.id}
-                className="flex items-start gap-3 p-3 rounded-lg border border-green-200 bg-green-50 hover:bg-green-100 transition-colors"
+                className="flex items-start gap-3 p-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 transition-colors"
               >
                 {/* Timeline dot */}
-                <div className="flex-shrink-0 mt-1">
-                  <div className="h-2 w-2 rounded-full bg-green-500" />
+                <div className="flex-shrink-0 mt-1.5">
+                  <div className="h-2 w-2 rounded-full bg-emerald-500" />
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-foreground">
                         {format(new Date(absence.startDate), 'MMM d')} -{' '}
                         {format(new Date(absence.endDate), 'MMM d, yyyy')}
                       </p>
-                      <p className="text-xs text-gray-600 mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {absence.reason || 'No reason provided'}
                       </p>
                     </div>
-                    <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100">
+                    <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-0">
                       {duration} {duration === 1 ? 'day' : 'days'}
                     </Badge>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">{startsIn}</p>
+                  <p className="text-xs text-muted-foreground/70 mt-2">{startsIn}</p>
                 </div>
               </div>
             );
@@ -146,10 +162,10 @@ export function UpcomingAbsences() {
 
         {/* View all link */}
         {absences.length >= 10 && (
-          <div className="mt-4 pt-4 border-t border-gray-200 text-center">
+          <div className="mt-4 pt-4 border-t text-center">
             <a
               href="/dashboard/absences"
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              className="text-sm text-primary hover:text-primary/80 font-medium transition-colors"
             >
               View all absences →
             </a>

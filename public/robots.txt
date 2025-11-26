@@ -1,0 +1,8 @@
+# robots.txt for Employee Profile Management System
+# This application is private and should not be indexed by search engines
+
+User-agent: *
+Disallow: /
+
+# Block all crawlers from all paths
+# This is an internal employee management application

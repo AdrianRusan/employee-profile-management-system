@@ -37,7 +37,10 @@ interface FeedbackListProps {
  * - Empty state
  */
 export function FeedbackList({ userId }: FeedbackListProps) {
-  const { data: currentUser } = trpc.auth.getCurrentUser.useQuery();
+  const { data: currentUser } = trpc.auth.getCurrentUser.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000, // 5 minutes - user data rarely changes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+  });
   const utils = trpc.useUtils();
   const [expandedFeedback, setExpandedFeedback] = useState<string | null>(null);
 

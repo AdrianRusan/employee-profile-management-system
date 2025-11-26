@@ -20,7 +20,10 @@ const roleColors = {
 export function RoleIndicator() {
   const router = useRouter();
   const utils = trpc.useUtils();
-  const { data: user } = trpc.auth.getCurrentUser.useQuery();
+  const { data: user } = trpc.auth.getCurrentUser.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000, // 5 minutes - user data rarely changes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+  });
 
   const switchRoleMutation = trpc.auth.switchRole.useMutation({
     onSuccess: async () => {

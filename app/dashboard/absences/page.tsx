@@ -27,7 +27,10 @@ import { Permissions } from '@/lib/permissions';
  * Shows user's own absence requests and manager approval interface
  */
 export default function AbsencesPage() {
-  const { data: user } = trpc.auth.getCurrentUser.useQuery();
+  const { data: user } = trpc.auth.getCurrentUser.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000, // 5 minutes - user data rarely changes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+  });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedAbsence, setSelectedAbsence] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('my-requests');
@@ -35,7 +38,10 @@ export default function AbsencesPage() {
   const utils = trpc.useUtils();
 
   // Fetch current user's absences
-  const { data: myAbsences, isLoading: myAbsencesLoading } = trpc.absence.getMy.useQuery();
+  const { data: myAbsences, isLoading: myAbsencesLoading } = trpc.absence.getMy.useQuery(undefined, {
+    staleTime: 2 * 60 * 1000, // 2 minutes - user may check recent submissions
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
 
   // Fetch all absences (manager only) - using centralized permissions
   // Real-time data for approvals - shorter staleTime for fresh data
@@ -50,14 +56,21 @@ export default function AbsencesPage() {
   );
 
   // Fetch statistics
-  const { data: stats } = trpc.absence.getMyStats.useQuery();
+  const { data: stats } = trpc.absence.getMyStats.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000, // 5 minutes - stats don't change frequently
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
 
   // Delete mutation
   const deleteMutation = trpc.absence.delete.useMutation({
     onSuccess: () => {
       toast.success('Absence request deleted successfully');
+      // Invalidate all absence-related queries
       utils.absence.getMy.invalidate();
       utils.absence.getMyStats.invalidate();
+      utils.absence.getForUser.invalidate();
+      utils.absence.getAll.invalidate();
+      utils.absence.getUpcoming.invalidate();
       setDeleteDialogOpen(false);
       setSelectedAbsence(null);
     },
@@ -81,7 +94,12 @@ export default function AbsencesPage() {
   const updateStatusMutation = trpc.absence.updateStatus.useMutation({
     onSuccess: (data) => {
       toast.success(`Absence request ${data.status.toLowerCase()} successfully`);
+      // Invalidate all absence-related queries for immediate UI update
+      utils.absence.getMy.invalidate();
+      utils.absence.getMyStats.invalidate();
+      utils.absence.getForUser.invalidate();
       utils.absence.getAll.invalidate();
+      utils.absence.getUpcoming.invalidate();
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to update absence request');
@@ -189,7 +207,7 @@ export default function AbsencesPage() {
               <CardHeader>
                 <CardTitle>Team Absence Requests</CardTitle>
                 <CardDescription>
-                  Review and approve absence requests from your team
+                  Review and approve absence requests from your team members
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -201,7 +219,9 @@ export default function AbsencesPage() {
                   </div>
                 ) : (
                   <AbsenceTable
-                    absences={allAbsences?.absences}
+                    absences={allAbsences?.absences?.filter(
+                      (absence) => absence.userId !== user?.id
+                    )}
                     showUser
                     showApproval
                     showActions={false}

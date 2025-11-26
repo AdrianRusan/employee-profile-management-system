@@ -31,8 +31,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Eye, Loader2 } from 'lucide-react';
+import { Search, Eye, Loader2, Users } from 'lucide-react';
 import { isValidRole } from '@/lib/type-guards';
+import { EmptyState } from '@/components/EmptyState';
 
 // Table columns definition
 // Note: These columns only access public fields that are always present
@@ -129,6 +130,8 @@ export default function ProfilesPage() {
       },
       {
         getNextPageParam: (lastPage) => lastPage.nextCursor,
+        staleTime: 2 * 60 * 1000, // 2 minutes - profiles list can change with filters
+        gcTime: 10 * 60 * 1000, // 10 minutes
       }
     );
 
@@ -253,8 +256,12 @@ export default function ProfilesPage() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No employees found.
+                <TableCell colSpan={columns.length} className="h-48">
+                  <EmptyState
+                    icon={Users}
+                    title="No employees found"
+                    description="Try adjusting your search or filters to find what you're looking for."
+                  />
                 </TableCell>
               </TableRow>
             )}

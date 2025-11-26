@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,37 +8,79 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Keyboard } from 'lucide-react';
+import {
+  Keyboard,
+  Navigation,
+  Plus,
+  HelpCircle,
+  Command,
+  ArrowRight,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useKeyboardShortcutsContext } from './KeyboardShortcutsContext';
 
 interface Shortcut {
   keys: string[];
   description: string;
-  category: string;
+  category: 'navigation' | 'actions' | 'help';
 }
+
+interface CategoryConfig {
+  label: string;
+  icon: React.ElementType;
+  color: string;
+  bgColor: string;
+}
+
+const CATEGORY_CONFIGS: Record<string, CategoryConfig> = {
+  navigation: {
+    label: 'Navigation',
+    icon: Navigation,
+    color: 'text-blue-500',
+    bgColor: 'bg-blue-500/10',
+  },
+  actions: {
+    label: 'Actions',
+    icon: Plus,
+    color: 'text-emerald-500',
+    bgColor: 'bg-emerald-500/10',
+  },
+  help: {
+    label: 'Help',
+    icon: HelpCircle,
+    color: 'text-amber-500',
+    bgColor: 'bg-amber-500/10',
+  },
+};
 
 const shortcuts: Shortcut[] = [
   // Navigation
-  { keys: ['G', 'D'], description: 'Go to Dashboard', category: 'Navigation' },
-  { keys: ['G', 'P'], description: 'Go to Profiles', category: 'Navigation' },
-  { keys: ['G', 'F'], description: 'Go to Feedback', category: 'Navigation' },
-  { keys: ['G', 'A'], description: 'Go to Absences', category: 'Navigation' },
+  { keys: ['G', 'D'], description: 'Go to Dashboard', category: 'navigation' },
+  { keys: ['G', 'P'], description: 'Go to Profiles', category: 'navigation' },
+  { keys: ['G', 'F'], description: 'Go to Feedback', category: 'navigation' },
+  { keys: ['G', 'A'], description: 'Go to Absences', category: 'navigation' },
+  { keys: ['G', 'S'], description: 'Go to Settings', category: 'navigation' },
+  { keys: ['G', 'X'], description: 'Go to Security', category: 'navigation' },
 
   // Actions
-  { keys: ['N', 'F'], description: 'New Feedback', category: 'Actions' },
-  { keys: ['N', 'A'], description: 'New Absence Request', category: 'Actions' },
-  { keys: ['?'], description: 'Show Keyboard Shortcuts', category: 'Help' },
-  { keys: ['Esc'], description: 'Close Dialog/Modal', category: 'Help' },
+  { keys: ['N', 'F'], description: 'New Feedback', category: 'actions' },
+  { keys: ['N', 'A'], description: 'New Absence Request', category: 'actions' },
+
+  // Help
+  { keys: ['?'], description: 'Show Keyboard Shortcuts', category: 'help' },
+  { keys: ['Esc'], description: 'Close Dialog / Modal', category: 'help' },
+  { keys: ['Ctrl', 'K'], description: 'Open Command Palette', category: 'help' },
 ];
 
 interface KeyboardShortcutsProps {
   onNavigate?: (path: string) => void;
   onAction?: (action: string) => void;
+  keySequence: string[];
+  setKeySequence: (seq: string[]) => void;
 }
 
-export function KeyboardShortcuts({ onNavigate, onAction }: KeyboardShortcutsProps) {
-  const [showDialog, setShowDialog] = useState(false);
-  const [keySequence, setKeySequence] = useState<string[]>([]);
+export function KeyboardShortcuts({ onNavigate, onAction, keySequence, setKeySequence }: KeyboardShortcutsProps) {
+  const { isDialogOpen, openDialog, closeDialog } = useKeyboardShortcutsContext();
 
   const handleShortcut = useCallback(
     (keys: string[]) => {
@@ -53,6 +95,10 @@ export function KeyboardShortcuts({ onNavigate, onAction }: KeyboardShortcutsPro
         onNavigate('/dashboard/feedback');
       } else if (keyString === 'GA' && onNavigate) {
         onNavigate('/dashboard/absences');
+      } else if (keyString === 'GS' && onNavigate) {
+        onNavigate('/dashboard/settings');
+      } else if (keyString === 'GX' && onNavigate) {
+        onNavigate('/dashboard/settings/security');
       }
       // Action shortcuts
       else if (keyString === 'NF' && onAction) {
@@ -77,16 +123,16 @@ export function KeyboardShortcuts({ onNavigate, onAction }: KeyboardShortcutsPro
         return;
       }
 
-      // Handle ? key to show shortcuts
-      if (e.key === '?' && !e.shiftKey) {
+      // Handle ? key to show shortcuts (requires Shift on most keyboards)
+      if (e.key === '?') {
         e.preventDefault();
-        setShowDialog(true);
+        openDialog();
         return;
       }
 
       // Handle Escape to close shortcuts dialog
-      if (e.key === 'Escape' && showDialog) {
-        setShowDialog(false);
+      if (e.key === 'Escape' && isDialogOpen) {
+        closeDialog();
         return;
       }
 
@@ -123,7 +169,7 @@ export function KeyboardShortcuts({ onNavigate, onAction }: KeyboardShortcutsPro
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [keySequence, showDialog, handleShortcut]);
+  }, [keySequence, setKeySequence, isDialogOpen, openDialog, closeDialog, handleShortcut]);
 
   // Group shortcuts by category
   const groupedShortcuts = shortcuts.reduce((acc, shortcut) => {
@@ -134,65 +180,116 @@ export function KeyboardShortcuts({ onNavigate, onAction }: KeyboardShortcutsPro
     return acc;
   }, {} as Record<string, Shortcut[]>);
 
+  const categoryOrder: Array<'navigation' | 'actions' | 'help'> = ['navigation', 'actions', 'help'];
+
   return (
     <>
       {/* Show current key sequence indicator */}
       {keySequence.length > 0 && (
-        <div className="fixed bottom-4 right-4 z-50 bg-gray-900 text-white px-4 py-2 rounded-lg shadow-lg">
-          <div className="flex items-center gap-2">
-            <Keyboard className="h-4 w-4" />
-            <span className="font-mono text-sm">{keySequence.join(' ')}</span>
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-2 fade-in duration-200">
+          <div className="flex items-center gap-3 bg-foreground text-background px-4 py-3 rounded-xl shadow-2xl">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background/20">
+              <Command className="h-4 w-4" />
+            </div>
+            <div className="flex items-center gap-1.5">
+              {keySequence.map((key, index) => (
+                <span key={index} className="flex items-center gap-1.5">
+                  <kbd className="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-background/20 px-2 font-mono text-sm font-semibold">
+                    {key}
+                  </kbd>
+                  {index < keySequence.length - 1 && (
+                    <ArrowRight className="h-3 w-3 text-background/60" />
+                  )}
+                </span>
+              ))}
+            </div>
+            <div className="h-4 w-px bg-background/30" />
+            <span className="text-sm text-background/70">waiting...</span>
           </div>
         </div>
       )}
 
       {/* Keyboard Shortcuts Dialog */}
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Keyboard className="h-5 w-5" />
-              Keyboard Shortcuts
-            </DialogTitle>
-            <DialogDescription>
-              Use these keyboard shortcuts to navigate and perform actions quickly
-            </DialogDescription>
+      <Dialog open={isDialogOpen} onOpenChange={(open) => open ? openDialog() : closeDialog()}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                <Keyboard className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl">Keyboard Shortcuts</DialogTitle>
+                <DialogDescription>
+                  Navigate and perform actions quickly
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
 
-          <div className="space-y-6">
-            {Object.entries(groupedShortcuts).map(([category, categoryShortcuts]) => (
-              <div key={category}>
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">{category}</h3>
-                <div className="space-y-2">
-                  {categoryShortcuts.map((shortcut, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50"
-                    >
-                      <span className="text-sm text-gray-700">{shortcut.description}</span>
-                      <div className="flex gap-1">
-                        {shortcut.keys.map((key, keyIndex) => (
-                          <Badge
-                            key={keyIndex}
-                            variant="outline"
-                            className="font-mono font-semibold"
-                          >
-                            {key}
-                          </Badge>
-                        ))}
-                      </div>
+          <div className="space-y-6 py-2">
+            {categoryOrder.map((category) => {
+              const categoryShortcuts = groupedShortcuts[category];
+              if (!categoryShortcuts) return null;
+
+              const config = CATEGORY_CONFIGS[category];
+              const Icon = config.icon;
+
+              return (
+                <div key={category} className="space-y-3">
+                  {/* Category Header */}
+                  <div className="flex items-center gap-2">
+                    <div className={cn('flex h-6 w-6 items-center justify-center rounded-md', config.bgColor)}>
+                      <Icon className={cn('h-3.5 w-3.5', config.color)} />
                     </div>
-                  ))}
+                    <h3 className="text-sm font-semibold text-foreground">
+                      {config.label}
+                    </h3>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+
+                  {/* Shortcuts List */}
+                  <div className="grid gap-1.5">
+                    {categoryShortcuts.map((shortcut, index) => (
+                      <div
+                        key={index}
+                        className="group flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+                          {shortcut.description}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          {shortcut.keys.map((key, keyIndex) => (
+                            <span key={keyIndex} className="flex items-center gap-1">
+                              <kbd
+                                className={cn(
+                                  'pointer-events-none inline-flex h-6 min-w-6 select-none items-center justify-center rounded-md border px-2 font-mono text-xs font-medium transition-colors',
+                                  'bg-muted text-muted-foreground',
+                                  'group-hover:bg-primary/10 group-hover:text-primary group-hover:border-primary/30'
+                                )}
+                              >
+                                {key}
+                              </kbd>
+                              {keyIndex < shortcut.keys.length - 1 && (
+                                <span className="text-xs text-muted-foreground/50 mx-0.5">then</span>
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-            <p className="text-xs text-blue-900">
-              <strong>Tip:</strong> Press <Badge variant="outline" className="mx-1 font-mono">?</Badge>
-              anytime to view this shortcuts dialog
-            </p>
+          {/* Footer Tip */}
+          <div className="flex items-center justify-center gap-2 pt-4 border-t">
+            <span className="text-xs text-muted-foreground">Press</span>
+            <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+              ?
+            </kbd>
+            <span className="text-xs text-muted-foreground">anytime to view shortcuts</span>
           </div>
         </DialogContent>
       </Dialog>

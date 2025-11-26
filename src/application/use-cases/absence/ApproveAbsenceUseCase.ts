@@ -62,7 +62,20 @@ export class ApproveAbsenceUseCase {
       throw new Error('Absence owner not found');
     }
 
-    // 4. Check if approver can approve this specific absence
+    // 4. SECURITY: Verify organization boundary - approver and owner must be in the same organization
+    if (approver.organizationId !== owner.organizationId) {
+      this.logger.warn(
+        {
+          approverId: approver.id,
+          approverOrg: approver.organizationId,
+          ownerOrg: owner.organizationId,
+        },
+        'Cross-organization absence approval attempt blocked'
+      );
+      throw new Error('Cannot approve absences from different organizations');
+    }
+
+    // 5. Check if approver can approve this specific absence
     // Managers can only approve absences in their department
     if (approver.isManager()) {
       if (approver.department !== owner.department) {
@@ -70,7 +83,7 @@ export class ApproveAbsenceUseCase {
       }
     }
 
-    // 5. Prevent self-approval
+    // 6. Prevent self-approval
     if (approver.id === owner.id) {
       throw new Error('Cannot approve your own absence request');
     }

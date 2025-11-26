@@ -111,6 +111,27 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Admin Theme - Dark professional aesthetic */
+.admin-theme {
+  --background: oklch(0.13 0.01 260);
+  --foreground: oklch(0.98 0 0);
+  --card: oklch(0.16 0.01 260);
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.16 0.01 260);
+  --popover-foreground: oklch(0.98 0 0);
+  --primary: oklch(0.65 0.2 250);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.22 0.01 260);
+  --secondary-foreground: oklch(0.98 0 0);
+  --muted: oklch(0.22 0.01 260);
+  --muted-foreground: oklch(0.65 0 0);
+  --accent: oklch(0.22 0.01 260);
+  --accent-foreground: oklch(0.98 0 0);
+  --border: oklch(0.25 0.01 260);
+  --input: oklch(0.25 0.01 260);
+  --ring: oklch(0.65 0.2 250);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -302,5 +323,23 @@
   .dark .glass {
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Mobile table scroll container */
+  .table-scroll-container {
+    @apply overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0;
+  }
+
+  /* Scroll shadow indicators */
+  .scroll-shadows {
+    background:
+      linear-gradient(to right, var(--background) 30%, transparent),
+      linear-gradient(to left, var(--background) 30%, transparent),
+      linear-gradient(to right, rgba(0,0,0,0.1), transparent 15px),
+      linear-gradient(to left, rgba(0,0,0,0.1), transparent 15px);
+    background-position: left center, right center, left center, right center;
+    background-repeat: no-repeat;
+    background-size: 20px 100%, 20px 100%, 15px 100%, 15px 100%;
+    background-attachment: local, local, scroll, scroll;
   }
 }

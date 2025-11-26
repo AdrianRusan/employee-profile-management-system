@@ -4,6 +4,7 @@ import { USER_ABSENCE_SELECT, USER_CARD_SELECT } from '@/lib/prisma/selects';
 import { AppErrors, findOrThrow } from '@/lib/errors';
 import { Permissions, type PermissionUser } from '@/lib/permissions';
 import type { PaginationInput } from '@/lib/pagination';
+import { getCurrentTenant } from '@/lib/tenant-context';
 
 /**
  * Input types for absence service methods
@@ -177,6 +178,9 @@ export class AbsenceService {
             );
           }
 
+          // Get organization context
+          const tenant = getCurrentTenant();
+
           // Create absence request within same transaction
           const absenceRequest = await tx.absenceRequest.create({
             data: {
@@ -184,6 +188,7 @@ export class AbsenceService {
               endDate,
               reason,
               userId: session.id,
+              organizationId: tenant.organizationId,
             },
             include: {
               user: {

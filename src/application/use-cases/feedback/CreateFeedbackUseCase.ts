@@ -3,6 +3,7 @@ import { IUserRepository } from '../../../domain/repositories/IUserRepository';
 import { ILogger } from '../../ports/ILogger';
 import { Feedback } from '../../../domain/entities/Feedback';
 import { FeedbackDTO } from '../../dtos/FeedbackDTO';
+import { getCurrentTenant } from '@/lib/tenant-context';
 
 export interface CreateFeedbackInput {
   giverId: string;
@@ -41,8 +42,21 @@ export class CreateFeedbackUseCase {
       throw new Error('Cannot create feedback for deleted users');
     }
 
+    // Verify both users are in the same organization (security boundary)
+    if (giver.organizationId !== receiver.organizationId) {
+      throw new Error('Cannot give feedback to users in different organizations');
+    }
+
+    // Get organization context
+    const tenant = getCurrentTenant();
+
+    // Additional check: ensure current tenant matches the users' organization
+    if (tenant.organizationId !== giver.organizationId) {
+      throw new Error('Organization mismatch');
+    }
+
     // Create feedback entity (validates business rules)
-    const feedback = Feedback.create(input.giverId, input.receiverId, input.content);
+    const feedback = Feedback.create(tenant.organizationId, input.giverId, input.receiverId, input.content);
 
     // Apply polished content if provided
     if (input.polishedContent && input.isPolished) {

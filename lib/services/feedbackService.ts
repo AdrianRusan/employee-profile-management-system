@@ -4,6 +4,7 @@ import { USER_FEEDBACK_SELECT } from '@/lib/prisma/selects';
 import { polishFeedback } from '@/lib/ai/huggingface';
 import { AppErrors, findOrThrow } from '@/lib/errors';
 import { Permissions, type PermissionUser } from '@/lib/permissions';
+import { getCurrentTenant } from '@/lib/tenant-context';
 
 /**
  * Input types for feedback service methods
@@ -71,6 +72,9 @@ export class FeedbackService {
       throw AppErrors.badRequest('You cannot give feedback to yourself');
     }
 
+    // Get organization context
+    const tenant = getCurrentTenant();
+
     // Create feedback entry
     const feedback = await this.prisma.feedback.create({
       data: {
@@ -79,6 +83,7 @@ export class FeedbackService {
         isPolished: isPolished || false,
         giverId: session.id,
         receiverId,
+        organizationId: tenant.organizationId,
       },
       include: {
         giver: {

@@ -9,6 +9,7 @@ export enum Role {
 
 export interface UserProps {
   id: string;
+  organizationId: string;
   email: Email;
   name: string;
   role: Role;
@@ -81,6 +82,11 @@ export class User {
    * Business logic: Can this user view sensitive data of another user?
    */
   canViewSensitiveDataOf(targetUser: User): boolean {
+    // Must be in the same organization (critical security check)
+    if (this.props.organizationId !== targetUser.props.organizationId) {
+      return false;
+    }
+
     // User can view their own sensitive data
     if (this.id === targetUser.id) {
       return true;
@@ -108,6 +114,11 @@ export class User {
    * Business logic: Can this user edit another user's profile?
    */
   canEditProfile(targetUser: User): boolean {
+    // Must be in the same organization (critical security check)
+    if (this.props.organizationId !== targetUser.props.organizationId) {
+      return false;
+    }
+
     // User can edit their own profile
     if (this.id === targetUser.id) {
       return true;
@@ -128,6 +139,11 @@ export class User {
    * Business logic: Can this user delete another user?
    */
   canDeleteUser(targetUser: User): boolean {
+    // Must be in the same organization (critical security check)
+    if (this.props.organizationId !== targetUser.props.organizationId) {
+      return false;
+    }
+
     // Cannot delete yourself
     if (this.id === targetUser.id) {
       return false;
@@ -254,6 +270,10 @@ export class User {
    */
   get id(): string {
     return this.props.id;
+  }
+
+  get organizationId(): string {
+    return this.props.organizationId;
   }
 
   get email(): Email {

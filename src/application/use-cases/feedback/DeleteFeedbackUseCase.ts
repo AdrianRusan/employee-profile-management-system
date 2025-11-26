@@ -63,6 +63,20 @@ export class DeleteFeedbackUseCase {
         throw new Error('Associated users not found');
       }
 
+      // SECURITY: Verify organization boundary BEFORE department check
+      if (user.organizationId !== giver.organizationId || user.organizationId !== receiver.organizationId) {
+        this.logger.warn(
+          {
+            userId: user.id,
+            userOrg: user.organizationId,
+            giverOrg: giver.organizationId,
+            receiverOrg: receiver.organizationId,
+          },
+          'Cross-organization feedback deletion attempt blocked'
+        );
+        throw new Error('Cannot delete feedback from different organizations');
+      }
+
       const isInDepartment =
         (giver.department === user.department) ||
         (receiver.department === user.department);

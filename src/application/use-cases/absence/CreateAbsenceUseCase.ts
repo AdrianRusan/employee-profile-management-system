@@ -4,6 +4,7 @@ import { ILogger } from '../../ports/ILogger';
 import { Absence } from '../../../domain/entities/Absence';
 import { DateRange } from '../../../domain/value-objects/DateRange';
 import { CreateAbsenceDTO, AbsenceDTO } from '../../dtos/AbsenceDTO';
+import { getCurrentTenant } from '@/lib/tenant-context';
 
 /**
  * CreateAbsenceUseCase
@@ -41,14 +42,17 @@ export class CreateAbsenceUseCase {
         throw new Error('Cannot create absence for deleted user');
       }
 
-      // 2. Create date range - this validates date business rules
+      // 2. Get organization context
+      const tenant = getCurrentTenant();
+
+      // 3. Create date range - this validates date business rules
       // (end >= start, max duration, etc.)
       const dateRange = DateRange.create(input.startDate, input.endDate);
 
-      // 3. Create absence entity - this validates reason length, etc.
-      const absence = Absence.create(input.userId, dateRange, input.reason);
+      // 4. Create absence entity - this validates reason length, etc.
+      const absence = Absence.create(tenant.organizationId, input.userId, dateRange, input.reason);
 
-      // 4. Check for overlapping absences
+      // 5. Check for overlapping absences
       this.logger.debug({ userId: input.userId }, 'Checking for overlapping absences');
 
       const overlapping = await this.absenceRepository.findOverlapping(
@@ -71,7 +75,7 @@ export class CreateAbsenceUseCase {
         }
       }
 
-      // 5. Save the absence
+      // 6. Save the absence
       const saved = await this.absenceRepository.save(absence);
 
       this.logger.info(
@@ -83,7 +87,7 @@ export class CreateAbsenceUseCase {
         'Absence request created successfully'
       );
 
-      // 6. Return DTO (not domain entity)
+      // 7. Return DTO (not domain entity)
       return this.toDTO(saved);
     } catch (error) {
       this.logger.error(

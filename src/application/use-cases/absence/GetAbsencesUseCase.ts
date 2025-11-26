@@ -10,6 +10,8 @@ export interface GetAbsencesInput {
   includeDeleted?: boolean;
   skip?: number;
   take?: number;
+  includeUser?: boolean;
+  department?: string;
 }
 
 export interface GetAbsencesOutput {
@@ -77,9 +79,11 @@ export class GetAbsencesUseCase {
         includeDeleted: input.includeDeleted,
         skip: input.skip,
         take: input.take,
+        includeUser: input.includeUser,
+        department: input.department,
       });
 
-      absences = result.absences.map((absence) => ({
+      absences = result.absences.map((absence, index) => ({
         id: absence.id,
         userId: absence.userId,
         startDate: absence.dateRange.start,
@@ -91,6 +95,7 @@ export class GetAbsencesUseCase {
         createdAt: absence.createdAt,
         updatedAt: absence.updatedAt,
         deletedAt: absence.deletedAt,
+        user: result.users?.[index],
       }));
       total = result.total;
     }

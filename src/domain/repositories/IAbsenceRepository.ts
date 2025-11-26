@@ -30,7 +30,9 @@ export interface IAbsenceRepository {
     includeDeleted?: boolean;
     skip?: number;
     take?: number;
-  }): Promise<{ absences: Absence[]; total: number }>;
+    includeUser?: boolean;
+    department?: string;
+  }): Promise<{ absences: Absence[]; total: number; users?: any[] }>;
 
   /**
    * Find overlapping absences for a user

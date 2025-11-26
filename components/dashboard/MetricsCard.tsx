@@ -4,6 +4,7 @@ import { trpc } from '@/lib/trpc/Provider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TrendingUp, MessageSquare, Calendar, Users, Star, Clock } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 /**
  * MetricsCard component displays key dashboard metrics
@@ -56,18 +57,22 @@ export function MetricsCard() {
   const isManager = 'teamSize' in metrics;
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-muted-foreground" />
-          <CardTitle>Key Metrics</CardTitle>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10">
+            <TrendingUp className="h-5 w-5 text-emerald-500" />
+          </div>
+          <div>
+            <CardTitle className="text-lg">Key Metrics</CardTitle>
+            <CardDescription>
+              {isManager ? 'Your team and personal statistics' : 'Your activity summary'}
+            </CardDescription>
+          </div>
         </div>
-        <CardDescription>
-          {isManager ? 'Your team and personal statistics' : 'Your activity summary'}
-        </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3">
           {/* Feedback Received */}
           <MetricItem
             icon={<MessageSquare className="h-5 w-5 text-blue-500" />}
@@ -147,15 +152,18 @@ function MetricItem({
 }) {
   return (
     <div
-      className={`flex items-start gap-3 p-3 rounded-lg border ${
-        highlighted ? 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-800' : 'bg-muted/50 border-border'
-      }`}
+      className={cn(
+        'flex items-start gap-3 p-3 rounded-lg border transition-colors',
+        highlighted
+          ? 'bg-amber-500/5 border-amber-500/20'
+          : 'bg-muted/50 border-transparent hover:bg-muted'
+      )}
     >
-      <div className="flex-shrink-0 mt-1">{icon}</div>
+      <div className="flex-shrink-0 mt-0.5">{icon}</div>
       <div className="flex-1 min-w-0">
         <p className="text-2xl font-bold text-foreground">{value}</p>
         <p className="text-xs font-medium text-muted-foreground mt-1">{label}</p>
-        {subtitle && <p className="text-xs text-muted-foreground/80 mt-0.5">{subtitle}</p>}
+        {subtitle && <p className="text-xs text-muted-foreground/70 mt-0.5">{subtitle}</p>}
       </div>
     </div>
   );

@@ -76,9 +76,12 @@ export function AbsenceRequestDialog({ children, onSuccess }: AbsenceRequestDial
       });
       setOpen(false);
 
-      // Invalidate queries to refresh data
+      // Invalidate all absence-related queries to refresh data across the app
       utils.absence.getMy.invalidate();
       utils.absence.getMyStats.invalidate();
+      utils.absence.getForUser.invalidate();
+      utils.absence.getAll.invalidate();
+      utils.absence.getUpcoming.invalidate();
 
       if (onSuccess) {
         onSuccess();

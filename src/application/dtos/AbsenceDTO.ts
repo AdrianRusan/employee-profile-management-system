@@ -34,6 +34,13 @@ export interface AbsenceDTO {
   deletedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    department: string | null;
+    avatar: string | null;
+  };
 }
 
 /**
@@ -44,7 +51,8 @@ export interface AbsenceWithUserDTO extends AbsenceDTO {
     id: string;
     name: string;
     email: string;
-    department?: string;
+    department: string | null;
+    avatar: string | null;
   };
 }
 

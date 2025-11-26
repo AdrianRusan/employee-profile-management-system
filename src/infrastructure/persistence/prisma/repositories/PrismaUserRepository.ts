@@ -4,6 +4,7 @@ import { User } from '../../../../domain/entities/User';
 import { Email } from '../../../../domain/value-objects/Email';
 import { UserMapper } from '../mappers/UserMapper';
 import { IEncryption } from '../../../../application/ports/IEncryption';
+import { getCurrentTenant, getTenantOrNull } from '@/lib/tenant-context';
 
 /**
  * Prisma implementation of IUserRepository
@@ -25,8 +26,12 @@ export class PrismaUserRepository implements IUserRepository {
    * Find a user by ID and decrypt sensitive fields if encryption is available
    */
   async findById(id: string): Promise<User | null> {
-    const prismaUser = await this.prisma.user.findUnique({
-      where: { id },
+    const tenant = getTenantOrNull();
+    const prismaUser = await this.prisma.user.findFirst({
+      where: {
+        id,
+        ...(tenant && { organizationId: tenant.organizationId }),
+      },
     });
 
     if (!prismaUser) return null;
@@ -55,9 +60,14 @@ export class PrismaUserRepository implements IUserRepository {
    * Find a user by email address
    */
   async findByEmail(email: Email): Promise<User | null> {
-    const prismaUser = await this.prisma.user.findUnique({
-      where: { email: email.value },
-    });
+    const tenant = getTenantOrNull();
+    const where: any = { email: email.value };
+
+    if (tenant) {
+      where.organizationId = tenant.organizationId;
+    }
+
+    const prismaUser = await this.prisma.user.findFirst({ where });
 
     if (!prismaUser) return null;
 
@@ -89,7 +99,13 @@ export class PrismaUserRepository implements IUserRepository {
     skip?: number;
     take?: number;
   }): Promise<{ users: User[]; total: number }> {
+    const tenant = getTenantOrNull();
     const where: any = {};
+
+    // Add tenant isolation
+    if (tenant) {
+      where.organizationId = tenant.organizationId;
+    }
 
     // Exclude deleted users by default
     if (!options?.includeDeleted) {
@@ -143,11 +159,18 @@ export class PrismaUserRepository implements IUserRepository {
    * Get all unique departments from active users
    */
   async getDepartments(): Promise<string[]> {
+    const tenant = getTenantOrNull();
+    const where: any = {
+      department: { not: null },
+      deletedAt: null
+    };
+
+    if (tenant) {
+      where.organizationId = tenant.organizationId;
+    }
+
     const result = await this.prisma.user.findMany({
-      where: {
-        department: { not: null },
-        deletedAt: null
-      },
+      where,
       select: { department: true },
       distinct: ['department'],
     });
@@ -163,7 +186,13 @@ export class PrismaUserRepository implements IUserRepository {
    * Encrypts SSN if needed before persistence
    */
   async save(user: User): Promise<User> {
+    const tenant = getCurrentTenant(); // Throws if no tenant for mutations
     const data = UserMapper.toPrisma(user);
+
+    // Ensure organizationId matches tenant
+    if (data.organizationId !== tenant.organizationId) {
+      throw new Error('User organizationId must match current tenant');
+    }
 
     // Encrypt SSN if it needs encryption and encryption is available
     if (user.ssn && user.ssn.needsEncryption() && this.encryption.isAvailable()) {
@@ -196,7 +225,13 @@ export class PrismaUserRepository implements IUserRepository {
    * Note: This is a hard delete. For soft deletes, use User.softDelete() then save()
    */
   async delete(id: string): Promise<void> {
-    await this.prisma.user.delete({ where: { id } });
+    const tenant = getCurrentTenant(); // Throws if no tenant for mutations
+    await this.prisma.user.deleteMany({
+      where: {
+        id,
+        organizationId: tenant.organizationId,
+      },
+    });
   }
 
   /**
@@ -204,12 +239,17 @@ export class PrismaUserRepository implements IUserRepository {
    * Optionally exclude a specific user ID (useful for update operations)
    */
   async emailExists(email: Email, excludeUserId?: string): Promise<boolean> {
-    const count = await this.prisma.user.count({
-      where: {
-        email: email.value,
-        id: excludeUserId ? { not: excludeUserId } : undefined,
-      },
-    });
+    const tenant = getTenantOrNull();
+    const where: any = {
+      email: email.value,
+      id: excludeUserId ? { not: excludeUserId } : undefined,
+    };
+
+    if (tenant) {
+      where.organizationId = tenant.organizationId;
+    }
+
+    const count = await this.prisma.user.count({ where });
 
     return count > 0;
   }

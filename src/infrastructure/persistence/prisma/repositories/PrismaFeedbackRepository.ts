@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { IFeedbackRepository } from '../../../../domain/repositories/IFeedbackRepository';
 import { Feedback } from '../../../../domain/entities/Feedback';
 import { FeedbackMapper } from '../mappers/FeedbackMapper';
+import { getCurrentTenant, getTenantOrNull } from '@/lib/tenant-context';
 
 /**
  * Prisma implementation of IFeedbackRepository
@@ -20,8 +21,12 @@ export class PrismaFeedbackRepository implements IFeedbackRepository {
    * Find a feedback by ID
    */
   async findById(id: string): Promise<Feedback | null> {
-    const prismaFeedback = await this.prisma.feedback.findUnique({
-      where: { id },
+    const tenant = getTenantOrNull();
+    const prismaFeedback = await this.prisma.feedback.findFirst({
+      where: {
+        id,
+        ...(tenant && { organizationId: tenant.organizationId }),
+      },
     });
 
     return prismaFeedback ? FeedbackMapper.toDomain(prismaFeedback) : null;
@@ -38,7 +43,12 @@ export class PrismaFeedbackRepository implements IFeedbackRepository {
       take?: number;
     }
   ): Promise<{ feedbacks: Feedback[]; total: number }> {
+    const tenant = getTenantOrNull();
     const where: any = { giverId };
+
+    if (tenant) {
+      where.organizationId = tenant.organizationId;
+    }
 
     // Exclude deleted feedback by default
     if (!options?.includeDeleted) {
@@ -73,7 +83,12 @@ export class PrismaFeedbackRepository implements IFeedbackRepository {
       take?: number;
     }
   ): Promise<{ feedbacks: Feedback[]; total: number }> {
+    const tenant = getTenantOrNull();
     const where: any = { receiverId };
+
+    if (tenant) {
+      where.organizationId = tenant.organizationId;
+    }
 
     // Exclude deleted feedback by default
     if (!options?.includeDeleted) {
@@ -106,7 +121,12 @@ export class PrismaFeedbackRepository implements IFeedbackRepository {
     skip?: number;
     take?: number;
   }): Promise<{ feedbacks: Feedback[]; total: number }> {
+    const tenant = getTenantOrNull();
     const where: any = {};
+
+    if (tenant) {
+      where.organizationId = tenant.organizationId;
+    }
 
     // Exclude deleted feedback by default
     if (!options?.includeDeleted) {
@@ -139,8 +159,15 @@ export class PrismaFeedbackRepository implements IFeedbackRepository {
    * Find recent feedback with a limit (for dashboards/activity feeds)
    */
   async findRecent(limit: number = 10): Promise<Feedback[]> {
+    const tenant = getTenantOrNull();
+    const where: any = { deletedAt: null };
+
+    if (tenant) {
+      where.organizationId = tenant.organizationId;
+    }
+
     const prismaFeedback = await this.prisma.feedback.findMany({
-      where: { deletedAt: null },
+      where,
       orderBy: { createdAt: 'desc' },
       take: limit,
     });
@@ -152,7 +179,13 @@ export class PrismaFeedbackRepository implements IFeedbackRepository {
    * Save (create or update) a feedback
    */
   async save(feedback: Feedback): Promise<Feedback> {
+    const tenant = getCurrentTenant(); // Throws if no tenant for mutations
     const data = FeedbackMapper.toPrisma(feedback);
+
+    // Ensure organizationId matches tenant
+    if (data.organizationId !== tenant.organizationId) {
+      throw new Error('Feedback organizationId must match current tenant');
+    }
 
     // Use upsert for idempotency (create if doesn't exist, update if it does)
     const saved = await this.prisma.feedback.upsert({
@@ -176,7 +209,13 @@ export class PrismaFeedbackRepository implements IFeedbackRepository {
    * Note: This is a hard delete. For soft deletes, use Feedback.softDelete() then save()
    */
   async delete(id: string): Promise<void> {
-    await this.prisma.feedback.delete({ where: { id } });
+    const tenant = getCurrentTenant(); // Throws if no tenant for mutations
+    await this.prisma.feedback.deleteMany({
+      where: {
+        id,
+        organizationId: tenant.organizationId,
+      },
+    });
   }
 
   /**
@@ -187,22 +226,28 @@ export class PrismaFeedbackRepository implements IFeedbackRepository {
     receivedCount: number;
     polishedCount: number;
   }> {
+    const tenant = getTenantOrNull();
+    const orgFilter = tenant ? { organizationId: tenant.organizationId } : {};
+
     // Execute queries in parallel for performance
     const [receivedCount, givenCount, polishedCount] = await Promise.all([
       this.prisma.feedback.count({
         where: {
+          ...orgFilter,
           receiverId: userId,
           deletedAt: null,
         },
       }),
       this.prisma.feedback.count({
         where: {
+          ...orgFilter,
           giverId: userId,
           deletedAt: null,
         },
       }),
       this.prisma.feedback.count({
         where: {
+          ...orgFilter,
           receiverId: userId,
           isPolished: true,
           deletedAt: null,
@@ -225,14 +270,19 @@ export class PrismaFeedbackRepository implements IFeedbackRepository {
     receiverId: string,
     excludeId?: string
   ): Promise<boolean> {
-    const count = await this.prisma.feedback.count({
-      where: {
-        giverId,
-        receiverId,
-        id: excludeId ? { not: excludeId } : undefined,
-        deletedAt: null,
-      },
-    });
+    const tenant = getTenantOrNull();
+    const where: any = {
+      giverId,
+      receiverId,
+      id: excludeId ? { not: excludeId } : undefined,
+      deletedAt: null,
+    };
+
+    if (tenant) {
+      where.organizationId = tenant.organizationId;
+    }
+
+    const count = await this.prisma.feedback.count({ where });
 
     return count > 0;
   }

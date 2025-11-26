@@ -28,7 +28,6 @@ async function evaluate() {
     }
 
     const result = await page.evaluate((script) => {
-      // eslint-disable-next-line no-eval
       return eval(script);
     }, args.script);
 

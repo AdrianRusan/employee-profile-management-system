@@ -40,13 +40,21 @@ export function AbsenceChart() {
 
   if (error) {
     return (
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
-          <CardTitle>Absence Requests</CardTitle>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10">
+              <CalendarDays className="h-5 w-5 text-purple-500" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">Absence Requests</CardTitle>
+              <CardDescription>Status breakdown of your time off requests</CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-lg bg-red-50 p-4">
-            <p className="text-sm text-red-800">
+          <div className="rounded-lg bg-destructive/10 p-4">
+            <p className="text-sm text-destructive">
               Failed to load absence stats. Please try again later.
             </p>
           </div>
@@ -57,19 +65,23 @@ export function AbsenceChart() {
 
   if (!stats || stats.total === 0) {
     return (
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <CalendarDays className="h-5 w-5 text-purple-500" />
-            <CardTitle>Absence Requests</CardTitle>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10">
+              <CalendarDays className="h-5 w-5 text-purple-500" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">Absence Requests</CardTitle>
+              <CardDescription>Status breakdown of your time off requests</CardDescription>
+            </div>
           </div>
-          <CardDescription>Status breakdown of your time off requests</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-64 flex flex-col items-center justify-center text-center">
-            <CalendarDays className="h-12 w-12 text-gray-300 mb-3" />
-            <p className="text-sm text-gray-500">No absence requests yet</p>
-            <p className="text-xs text-gray-400 mt-1">
+            <CalendarDays className="h-12 w-12 text-muted-foreground/30 mb-3" />
+            <p className="text-sm text-muted-foreground">No absence requests yet</p>
+            <p className="text-xs text-muted-foreground/70 mt-1">
               Request time off to see your history here
             </p>
           </div>
@@ -97,15 +109,19 @@ export function AbsenceChart() {
   ];
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <CalendarDays className="h-5 w-5 text-purple-500" />
-          <CardTitle>Absence Requests</CardTitle>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10">
+            <CalendarDays className="h-5 w-5 text-purple-500" />
+          </div>
+          <div>
+            <CardTitle className="text-lg">Absence Requests</CardTitle>
+            <CardDescription>
+              Status breakdown of your time off requests ({stats.total} total)
+            </CardDescription>
+          </div>
         </div>
-        <CardDescription>
-          Status breakdown of your time off requests ({stats.total} total)
-        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="h-64">
@@ -127,9 +143,9 @@ export function AbsenceChart() {
                   if (active && payload && payload.length) {
                     const data = payload[0].payload;
                     return (
-                      <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
-                        <p className="text-sm font-medium text-gray-900">{data.name}</p>
-                        <p className="text-sm text-gray-600">{data.value} requests</p>
+                      <div className="bg-popover p-3 rounded-lg shadow-lg border border-border">
+                        <p className="text-sm font-medium text-popover-foreground">{data.name}</p>
+                        <p className="text-sm text-muted-foreground">{data.value} requests</p>
                       </div>
                     );
                   }
@@ -146,19 +162,28 @@ export function AbsenceChart() {
         </div>
 
         {/* Summary stats */}
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
-              <p className="text-xs text-gray-600 mt-1">Pending</p>
+        <div className="mt-4 pt-4 border-t">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/5">
+              <div className="h-3 w-3 rounded-full bg-amber-500" />
+              <div>
+                <p className="text-lg font-bold text-foreground">{stats.pending}</p>
+                <p className="text-[10px] text-muted-foreground">Pending</p>
+              </div>
             </div>
-            <div>
-              <p className="text-2xl font-bold text-green-600">{stats.approved}</p>
-              <p className="text-xs text-gray-600 mt-1">Approved</p>
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/5">
+              <div className="h-3 w-3 rounded-full bg-emerald-500" />
+              <div>
+                <p className="text-lg font-bold text-foreground">{stats.approved}</p>
+                <p className="text-[10px] text-muted-foreground">Approved</p>
+              </div>
             </div>
-            <div>
-              <p className="text-2xl font-bold text-red-600">{stats.rejected}</p>
-              <p className="text-xs text-gray-600 mt-1">Rejected</p>
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-rose-500/5">
+              <div className="h-3 w-3 rounded-full bg-rose-500" />
+              <div>
+                <p className="text-lg font-bold text-foreground">{stats.rejected}</p>
+                <p className="text-[10px] text-muted-foreground">Rejected</p>
+              </div>
             </div>
           </div>
         </div>

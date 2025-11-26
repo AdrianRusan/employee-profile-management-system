@@ -13,6 +13,7 @@ export class AbsenceMapper {
   static toDomain(prismaAbsence: PrismaAbsence): Absence {
     return Absence.reconstitute({
       id: prismaAbsence.id,
+      organizationId: prismaAbsence.organizationId,
       userId: prismaAbsence.userId,
       dateRange: DateRange.create(prismaAbsence.startDate, prismaAbsence.endDate),
       reason: prismaAbsence.reason,
@@ -29,6 +30,7 @@ export class AbsenceMapper {
   static toPrisma(absence: Absence): Omit<PrismaAbsence, 'createdAt' | 'updatedAt'> {
     return {
       id: absence.id,
+      organizationId: absence.organizationId,
       userId: absence.userId,
       startDate: absence.dateRange.start,
       endDate: absence.dateRange.end,

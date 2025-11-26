@@ -1,7 +1,8 @@
 import { IFeedbackRepository } from '../../../domain/repositories/IFeedbackRepository';
 import { IUserRepository } from '../../../domain/repositories/IUserRepository';
 import { ILogger } from '../../ports/ILogger';
-import { FeedbackDTO } from '../../dtos/FeedbackDTO';
+import { FeedbackWithUsersDTO } from '../../dtos/FeedbackDTO';
+import { Feedback } from '../../../domain/entities/Feedback';
 
 export interface GetFeedbackInput {
   userId: string; // User requesting the feedback
@@ -13,13 +14,13 @@ export interface GetFeedbackInput {
 }
 
 export interface GetFeedbackOutput {
-  feedback: FeedbackDTO[];
+  feedback: FeedbackWithUsersDTO[];
   total: number;
 }
 
 /**
  * Get Feedback Use Case
- * Retrieves feedback with appropriate filtering
+ * Retrieves feedback with appropriate filtering and user enrichment
  */
 export class GetFeedbackUseCase {
   constructor(
@@ -36,7 +37,7 @@ export class GetFeedbackUseCase {
       throw new Error('User not found');
     }
 
-    let result: { feedbacks: any[]; total: number };
+    let result: { feedbacks: Feedback[]; total: number };
 
     if (input.targetUserId) {
       // Get feedback for specific user
@@ -62,16 +63,48 @@ export class GetFeedbackUseCase {
       });
     }
 
-    const feedback = result.feedbacks.map((f: any) => ({
-      id: f.id,
-      giverId: f.giverId,
-      receiverId: f.receiverId,
-      content: f.content,
-      polishedContent: f.polishedContent,
-      isPolished: f.isPolished,
-      createdAt: f.createdAt.toISOString(),
-      updatedAt: f.updatedAt.toISOString(),
-    }));
+    // Collect unique user IDs to fetch
+    const userIds = new Set<string>();
+    result.feedbacks.forEach((f) => {
+      userIds.add(f.giverId);
+      userIds.add(f.receiverId);
+    });
+
+    // Batch fetch all users
+    const usersMap = new Map<string, { id: string; name: string; email: string; avatar?: string }>();
+    await Promise.all(
+      Array.from(userIds).map(async (id) => {
+        const fetchedUser = await this.userRepository.findById(id);
+        if (fetchedUser) {
+          usersMap.set(id, {
+            id: fetchedUser.id,
+            name: fetchedUser.name,
+            email: fetchedUser.email.value,
+            avatar: fetchedUser.avatar,
+          });
+        }
+      })
+    );
+
+    // Enrich feedback with user data
+    const feedback: FeedbackWithUsersDTO[] = result.feedbacks.map((f) => {
+      const giver = usersMap.get(f.giverId);
+      const receiver = usersMap.get(f.receiverId);
+
+      return {
+        id: f.id,
+        giverId: f.giverId,
+        receiverId: f.receiverId,
+        content: f.content,
+        polishedContent: f.polishedContent,
+        isPolished: f.isPolished,
+        deletedAt: f.deletedAt,
+        createdAt: f.createdAt,
+        updatedAt: f.updatedAt,
+        giver: giver || { id: f.giverId, name: 'Unknown User', email: '' },
+        receiver: receiver || { id: f.receiverId, name: 'Unknown User', email: '' },
+      };
+    });
 
     return { feedback, total: result.total };
   }

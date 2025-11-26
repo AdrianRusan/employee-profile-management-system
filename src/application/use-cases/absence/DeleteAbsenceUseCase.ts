@@ -57,7 +57,20 @@ export class DeleteAbsenceUseCase {
       throw new Error('Absence owner not found');
     }
 
-    // 4. Check permissions
+    // 4. SECURITY: Verify organization boundary - user and owner must be in the same organization
+    if (user.organizationId !== owner.organizationId) {
+      this.logger.warn(
+        {
+          userId: user.id,
+          userOrg: user.organizationId,
+          ownerOrg: owner.organizationId,
+        },
+        'Cross-organization absence deletion attempt blocked'
+      );
+      throw new Error('Cannot delete absences from different organizations');
+    }
+
+    // 5. Check permissions
     const canDelete = user.canDeleteUser(owner);
     const isOwn = user.id === absence.userId;
 
@@ -71,10 +84,10 @@ export class DeleteAbsenceUseCase {
       throw new Error('You do not have permission to delete this absence');
     }
 
-    // 5. Soft delete the absence
+    // 6. Soft delete the absence
     absence.softDelete();
 
-    // 6. Save
+    // 7. Save
     await this.absenceRepository.save(absence);
 
     this.logger.info(
