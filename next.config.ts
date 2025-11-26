@@ -56,8 +56,9 @@ const nextConfig: NextConfig = {
               "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://*.vercel.live", // unsafe-eval needed for Next.js dev, unsafe-inline for inline scripts, vercel.live for Vercel toolbar
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", // unsafe-inline needed for Tailwind/styled-components
               "img-src 'self' data: https: blob:",
-              "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com",
+              "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com https://*.perplexity.ai",
               "connect-src 'self' https://api.resend.com https://*.sentry.io https://*.upstash.io https://*.vercel.app https://vercel.live https://*.vercel.live",
+              "frame-src https://vercel.live https://*.vercel.live", // Allow Vercel Live toolbar iframe
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
