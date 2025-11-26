@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { router, protectedProcedure } from '../trpc';
 import { TRPCError } from '@trpc/server';
+import { Prisma } from '@prisma/client';
 
 // Super admin check middleware
 const superAdminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
@@ -97,10 +98,7 @@ export const adminRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const where: {
-        deletedAt: null;
-        OR?: Array<{ name?: { contains: string; mode: 'insensitive' }; slug?: { contains: string; mode: 'insensitive' } }>;
-      } = {
+      const where: Prisma.OrganizationWhereInput = {
         deletedAt: null,
       };
 
@@ -184,12 +182,7 @@ export const adminRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const where: {
-        deletedAt: null;
-        organizationId?: string;
-        role?: 'EMPLOYEE' | 'MANAGER' | 'COWORKER';
-        OR?: Array<{ name?: { contains: string; mode: 'insensitive' }; email?: { contains: string; mode: 'insensitive' } }>;
-      } = {
+      const where: Prisma.UserWhereInput = {
         deletedAt: null,
       };
 
@@ -208,24 +201,23 @@ export const adminRouter = router({
         ];
       }
 
-      const [users, total] = await Promise.all([
-        ctx.prisma.user.findMany({
-          where,
-          skip: input.skip,
-          take: input.take,
-          include: {
-            organization: {
-              select: { name: true, slug: true },
-            },
+      const usersWithOrg = await ctx.prisma.user.findMany({
+        where,
+        skip: input.skip,
+        take: input.take,
+        include: {
+          organization: {
+            select: { name: true, slug: true },
           },
-          orderBy: { createdAt: 'desc' },
-        }),
-        ctx.prisma.user.count({ where }),
-      ]);
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      const total = await ctx.prisma.user.count({ where });
 
       ctx.logger.info(
         {
-          count: users.length,
+          count: usersWithOrg.length,
           total,
           filters: {
             search: input.search,
@@ -236,7 +228,7 @@ export const adminRouter = router({
         'All users listed'
       );
 
-      return { users, total };
+      return { users: usersWithOrg, total };
     }),
 
   // Suspend/unsuspend organization
